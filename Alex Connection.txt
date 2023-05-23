@@ -1,0 +1,42 @@
+ssh -XY ru30rojo@cshpc.rrze.fau.de
+yes
+password
+
+ssh -XY ru30rojo@alex.nhr.fau.de
+password
+
+Interactive Job:
+salloc --gres=gpu:a40:1 --partition=a40 --time=01:00:00
+
+Tensorflow:
+module avail
+module load python/tensorflow-2.7.0py3.9
+
+Run File:
+python
+import tensorflow as tf
+
+Search for GPU:
+from tensorflow.python.client import device_lib
+device_lib.list_local_devices
+
+-> Running Bash Script: Alex Documentation/Batch Processing...
+
+Files: /home/wecapstor1/caph/mppi114h/Datasets/diffuserun1
+
+
+sbatch job.sh
+#
+scontrol show job #
+
+from Users/hanne/:
+scp -r /Users/hanne/Desktop/2022WS/PW-2_MoDA/MoDA_Project/Hannes/CTA_Multiview_Analysis_Hannes_Cluster.py b129dc26@alex.nhr.fau.de:/home/hpc/b129dc/b129dc26/MoDA_Project
+scp -r /Users/hanne/Desktop/2022WS/PW-2_MoDA/MoDA_Project/Hannes/job.sh b129dc26@alex.nhr.fau.de:/home/hpc/b129dc/b129dc26/MoDA_Project/job.sh
+scp -r b129dc26@alex.nhr.fau.de:/home/hpc/b129dc/b129dc26/MoDA_Project/job.sh.o688719 /Users/hanne/Desktop/2022WS/PW-2_MoDA/MoDA_Project/Hannes/
+scp -r b129dc26@alex.nhr.fau.de:/home/hpc/b129dc/b129dc26/MoDA_Project/Test_multi_2023-02-26-00.png /Users/hanne/Desktop/2022WS/PW-2_MoDA/MoDA_Project/Hannes/
+scp -r /Users/hanne/Desktop/2022WS/PW-2_MoDA/MoDA_Project/Hannes/CTA_Multiview_Analysis_Hannes_Cluster3.py b129dc26@alex.nhr.fau.de:/home/hpc/b129dc/b129dc26/MoDA_Project
+
+
+scp -r b129dc26@alex.nhr.fau.de:/home/wecapstor1/caph/mppi114h/Datasets/diffuserun1/11*.hdf5 /Users/hanne/Desktop/2022WS/PW-2_MoDA/MoDA_Project/Hannes/Data
+scp -r /Users/hanne/Desktop/2022WS/PW-2_MoDA/MoDA_Project/Hannes/job3.sh b129dc26@alex.nhr.fau.de:/home/hpc/b129dc/b129dc26/MoDA_Project/job3.sh
+
