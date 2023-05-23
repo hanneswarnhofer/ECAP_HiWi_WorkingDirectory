@@ -3,6 +3,8 @@
 # 22715256
 # hannes.warnhofer@fau.de
 
+# Test if GitHub Connection works as intended
+lll = 1
 # import relevant (and irrelevant) packages 
 import tables
 import pandas as pd
