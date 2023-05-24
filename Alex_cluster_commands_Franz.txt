@@ -1,0 +1,106 @@
+Alex Commands
+
+
+https://hpc.fau.de/systems-services/documentation-instructions/clusters/alex-cluster/
+Connect to Alex:
+
+ssh -XY b129dc17@alex.nhr.fau.de
+
+
+
+
+from outside FAU (like from roth)
+create 'config' file in .ssh folder on local machine
+use template from https://hpc.fau.de/systems-services/documentation-instructions/ssh-secure-shell-access-to-hpc-systems/#hk-cshpc
+then simply
+
+
+
+ssh alex.nhr.fau.de
+
+
+
+Interactive Mode:
+
+salloc --gres=gpu:a40:1 --partition=a40 --time=01:00:00
+module load python/tensorflow-2.7.0py3.9
+python
+import tensorflow as tf
+
+
+tf.test.is_gpu_available()
+from tensorflow.python.client import device_lib
+device_lib.list_local_devices()
+tf.config.list_physical_devices('GPU')
+
+For uploading scripst batch processing:
+
+sbatch job_02.sh
+
+scontrol show job 1234135#
+
+
+look out for ExitCode : 0:0 should be completed, 
+1:0 is failed (python error)
+2:0 is bash script error
+
+
+
+
+Location of data files:
+/home/wecapstor1/caph/mppi114h/Datasets/diffuserun1
+
+
+
+--------------
+Location of own folder (only one with rights):
+
+
+cd /home/hpc/b129dc/b129dc17/jobs
+
+----------------
+
+Copy File from local path to server:
+
+scp -r local_file_path  b129dc17@alex.nhr.fau.de:/home/hpc/b129dc/b129dc17
+
+/Users/FranzValentinPacher/Desktop/Akademisches/UNI/Semester/7.Semester/MoDAII - Methods of Data Analysis/Cluster_upload
+
+
+
+scp -r /Users/FranzValentinPacher/Desktop/op24_3 b129dc17@alex.nhr.fau.de:/home/hpc/b129dc/b129dc17/optimisation/opti_24
+
+scp /Users/FranzValentinPacher/Desktop/job_f_24.sh b129dc17@alex.nhr.fau.de:/home/hpc/b129dc/b129dc17/fixedCTA/job_24
+scp /Users/FranzValentinPacher/Desktop/Stereo_fixed_24.py b129dc17@alex.nhr.fau.de:/home/hpc/b129dc/b129dc17/fixedCTA/job_24
+
+
+scp -r /Users/FranzValentinPacher/Desktop/__job_folder__ b129dc17@alex.nhr.fau.de:/home/hpc/b129dc/b129dc17/fixedCTA/job_24
+
+
+
+
+scp /Users/FranzValentinPacher/Desktop/Stereo_fixed_23_3.py b129dc17@alex.nhr.fau.de:/home/hpc/b129dc/b129dc17/scripts/fixedArch/23_3
+
+scp /Users/FranzValentinPacher/Desktop/opti_24_2.sh b129dc17@alex.nhr.fau.de:/home/hpc/b129dc/b129dc17/jobs/opti_24_2
+
+scp /Users/FranzValentinPacher/Desktop/Optimisation_24_2.py b129dc17@alex.nhr.fau.de:/home/hpc/b129dc/b129dc17/scripts/optim/24_2
+
+scp /Users/FranzValentinPacher/Desktop/opti_22_2/Optimisation_CTA_22_2_small.py b129dc17@alex.nhr.fau.de:/home/hpc/b129dc/b129dc17/scripts/optim/22_2
+
+Copy File from server to local path:
+
+scp -r b129dc17@alex.nhr.fau.de:/home/hpc/b129dc/b129dc17/fixedCTA/job_24  /Users/FranzValentinPacher/Desktop
+
+scp -r b129dc17@alex.nhr.fau.de:/home/hpc/b129dc/b129dc17/jobs /Users/FranzValentinPacher/Desktop
+
+scp -r b129dc17@alex.nhr.fau.de:/home/hpc/b129dc/b129dc17/scripts/optim/23_2 /Users/FranzValentinPacher/Desktop
+scp -r b129dc17@alex.nhr.fau.de:/home/hpc/b129dc/b129dc17/models/fixed/ /Users/FranzValentinPacher/Desktop
+
+scp b129dc17@alex.nhr.fau.de:/home/hpc/b129dc/b129dc17/models/CTA_fixedA_predictions.npy  /Users/FranzValentinPacher/Desktop
+
+run a script by either
+- interactive mode starten, load modules, etc then say python script.py
+
+- or sbatch job.sh
+
+
