@@ -32,8 +32,12 @@ print(data_g)
 filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
 data_p = tables.open_file(filePath_proton, mode="r")
 
+
+
 print("Successfully opened proton data!")
 print(data_p)
+
+'''
 print("Try again with DL1DataLoader:")
 
 reader_g = DL1DataReader([filePath_gamma])
@@ -43,3 +47,12 @@ print(reader_g)
 reader_p = DL1DataReader([filePath_proton])
 print("Sucessfully opended proton data with DataLoader!")
 print(reader_p)
+
+'''
+
+# Define the camera types and mapping methods
+hex_cams = ['HESS-I']
+camera_types = hex_cams 
+hex_methods = ['oversampling', 'rebinning', 'nearest_interpolation',
+               'bilinear_interpolation', 'bicubic_interpolation', 
+               'image_shifting', 'axial_addressing']
