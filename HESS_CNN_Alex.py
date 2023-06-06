@@ -7,11 +7,11 @@ import tables
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import random
+#import random
 
 import fnmatch
 import os
-import h5py
+#import h5
 import glob
 import pickle
 import sys
@@ -119,6 +119,7 @@ print(np.shape(labels))
 print(labels)
 
 # Define the camera types and mapping methods: HESS-I only
+
 hex_cams = ['HESS-I']
 camera_types = hex_cams 
 #hex_methods = ['oversampling', 'rebinning', 'nearest_interpolation',
@@ -127,12 +128,14 @@ camera_types = hex_cams
 hex_methods = ['axial_addressing']
 #Load the image mappers
 mappers = {}
+print("Start Initializing Mappers...")
+
 print("Initialization time (total for all telescopes):")
 for method in hex_methods:
     print(method)
     mapping_method = {cam: method for cam in hex_cams}
     mappers[method] = ImageMapper(mapping_method=mapping_method,camera_types=["HESS-I"])
-
+print("... Finished Initializing Mappers")
 # Reshape arrays for mapping
 # Defining how many events should be mapped and used later on
 num_events = 10000 #len(test_pixel_values) # Takes very long with many events on my PC, for testing: num_events = 10000 (len(test_pixel_values)=106319)
@@ -153,8 +156,10 @@ mapped_labels = np.empty(num_events)
 # Drawing radom num_events events from all the data 
 length = num_events
 max_value = len(tel1)
-random_list = random.sample(range(max_value),length) 
+#random_list = random.sample(range(max_value),length) 
+random_list = np.random.randint(max_value, size=length)
 image_nr = 0
+print("Start Mapping...")
 for event_nr in random_list:
     test_pixel_values_1 = np.expand_dims(tel1[event_nr], axis=1)
     mapped_images_1[image_nr] = default_mapper.map_image(test_pixel_values_1, 'HESS-I')
@@ -166,6 +171,9 @@ for event_nr in random_list:
     mapped_images_4[image_nr] = default_mapper.map_image(test_pixel_values_4, 'HESS-I')
     mapped_labels[image_nr] = labels[event_nr]
     image_nr=image_nr+1
+
+print("... Finished Mapping")
+
 mapped_images = np.array([mapped_images_1,mapped_images_2,mapped_images_3,mapped_images_4])
 print(np.shape(mapped_images_1))
 print(np.shape(mapped_images))

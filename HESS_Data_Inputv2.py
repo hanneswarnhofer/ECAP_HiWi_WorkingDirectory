@@ -10,7 +10,7 @@ import random
 
 import fnmatch
 import os
-import h5py
+#import h5py
 import glob
 import pickle
 import sys
