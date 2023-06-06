@@ -30,8 +30,8 @@ from tensorflow.keras.layers import Input, Concatenate, concatenate, Dense,Embed
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping
 from tensorflow.keras.models import Model, Sequential
 
-#filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
-filePath_gamma = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
+filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
+#filePath_gamma = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
 data_g = tables.open_file(filePath_gamma, mode="r")
 
 print("Successfully opened gamma data!")
@@ -150,7 +150,7 @@ test_pixel_values_3 = np.expand_dims(test_pixel_values_3, axis=2)
 test_pixel_values_4 = np.expand_dims(test_pixel_values_4, axis=2)
 
 # Mapping the images
-num_events = 10000 #len(test_pixel_values) # Takes very long with many events on my PC, for testing: num_events = 10000 (len(test_pixel_values)=106319)
+num_events = 1000 #len(test_pixel_values) # Takes very long with many events on my PC, for testing: num_events = 10000 (len(test_pixel_values)=106319)
 default_mapper = ImageMapper(camera_types=['HESS-I'])
 padding_mapper = ImageMapper(padding={cam: 10 for cam in camera_types}, camera_types=["HESS-I"])
 

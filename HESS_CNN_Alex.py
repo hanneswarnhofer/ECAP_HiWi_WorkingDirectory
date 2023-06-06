@@ -149,7 +149,7 @@ test_pixel_values_3 = np.expand_dims(test_pixel_values_3, axis=2)
 test_pixel_values_4 = np.expand_dims(test_pixel_values_4, axis=2)
 
 # Mapping the images
-num_events = 10000 #len(test_pixel_values) # Takes very long with many events on my PC, for testing: num_events = 10000 (len(test_pixel_values)=106319)
+num_events = 100000 #len(test_pixel_values) # Takes very long with many events on my PC, for testing: num_events = 10000 (len(test_pixel_values)=106319)
 default_mapper = ImageMapper(camera_types=['HESS-I'])
 padding_mapper = ImageMapper(padding={cam: 10 for cam in camera_types}, camera_types=["HESS-I"])
 
@@ -194,7 +194,7 @@ print(np.shape(mapped_labels))
 num_epochs = 20
 batch_size = 256
 rate = 0.25
-reg = 0.002
+reg = 0.01
 patience = 5
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
