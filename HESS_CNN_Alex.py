@@ -3,6 +3,7 @@
 # hannes.warnhofer@fau.de
 
 import tables
+import tables
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -30,8 +31,9 @@ from tensorflow.keras.layers import Input, Concatenate, concatenate, Dense,Embed
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping
 from tensorflow.keras.models import Model, Sequential
 
-filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
+#filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
 #filePath_gamma = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
+filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
 data_g = tables.open_file(filePath_gamma, mode="r")
 
 print("Successfully opened gamma data!")
@@ -60,8 +62,9 @@ del tel4g_raw
 
 data_g.close()
 
-filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
+#filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
 #filePath_proton = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
+filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"
 data_p = tables.open_file(filePath_proton, mode="r")
 
 print("Successfully opened proton data!")
@@ -95,7 +98,6 @@ tel3 = np.concatenate((tel3g,tel3p),axis=0)
 tel4 = np.concatenate((tel4g,tel4p),axis=0)
 labels = np.concatenate((labelsg_ones,labelsp_zeros),axis=0)
 
-
 del tel1p
 del tel1g
 del tel2p
@@ -106,6 +108,8 @@ del tel4p
 del tel4g
 del labelsp
 del labelsg
+del labelsp_zeros
+del labelsg_ones
 
 print(np.shape(tel1))
 print(np.shape(tel2))
@@ -114,13 +118,13 @@ print(np.shape(tel4))
 print(np.shape(labels))
 print(labels)
 
-# Define the camera types and mapping methods
+# Define the camera types and mapping methods: HESS-I only
 hex_cams = ['HESS-I']
 camera_types = hex_cams 
-hex_methods = ['oversampling', 'rebinning', 'nearest_interpolation',
-               'bilinear_interpolation', 'bicubic_interpolation', 
-               'image_shifting', 'axial_addressing']
-
+#hex_methods = ['oversampling', 'rebinning', 'nearest_interpolation',
+#               'bilinear_interpolation', 'bicubic_interpolation', 
+#               'image_shifting', 'axial_addressing']
+hex_methods = ['axial_addressing']
 #Load the image mappers
 mappers = {}
 print("Initialization time (total for all telescopes):")
@@ -130,52 +134,38 @@ for method in hex_methods:
     mappers[method] = ImageMapper(mapping_method=mapping_method,camera_types=["HESS-I"])
 
 # Reshape arrays for mapping
-num_pixels = len(CameraGeometry.from_name('HESS-I').pix_id)
-test_pixel_values = np.empty((len(tel1),num_pixels))
-print(np.shape(test_pixel_values))
-test_pixel_values_1 = test_pixel_values
-test_pixel_values_2 = test_pixel_values
-test_pixel_values_3 = test_pixel_values
-test_pixel_values_4 = test_pixel_values
-
-test_pixel_values_1[:] = tel1[:]
-test_pixel_values_2[:] = tel2[:]
-test_pixel_values_3[:] = tel3[:]
-test_pixel_values_4[:] = tel4[:]
-
-test_pixel_values_1 = np.expand_dims(test_pixel_values_1, axis=2)
-test_pixel_values_2 = np.expand_dims(test_pixel_values_2, axis=2)
-test_pixel_values_3 = np.expand_dims(test_pixel_values_3, axis=2)
-test_pixel_values_4 = np.expand_dims(test_pixel_values_4, axis=2)
-
-# Mapping the images
+# Defining how many events should be mapped and used later on
 num_events = 10000 #len(test_pixel_values) # Takes very long with many events on my PC, for testing: num_events = 10000 (len(test_pixel_values)=106319)
-default_mapper = ImageMapper(camera_types=['HESS-I'])
-padding_mapper = ImageMapper(padding={cam: 10 for cam in camera_types}, camera_types=["HESS-I"])
 
-image_shape = default_mapper.map_image(test_pixel_values_1[0], 'HESS-I').shape
-mapped_images_1 = np.empty((num_events,) + image_shape)
-mapped_images_2 = mapped_images_1
-mapped_images_3 = mapped_images_1
-mapped_images_4 = mapped_images_1
+# Defining image shape and mapper type
+default_mapper = ImageMapper(camera_types=['HESS-I'])
+#padding_mapper = ImageMapper(padding={cam: 10 for cam in camera_types}, camera_types=["HESS-I"])
+#image_shape = default_mapper.map_image(tel1[0], 'HESS-I').shape
+
+# Creating empty arrays for mapped images and the associated labels
+mapped_images_1 = np.empty((num_events, 72,72,1))
+mapped_images_2 = np.empty((num_events, 72,72,1))
+mapped_images_3 = np.empty((num_events, 72,72,1))
+mapped_images_4 = np.empty((num_events, 72,72,1))
 mapped_labels = np.empty(num_events)
 
+# Using the map_image function for mapping the data from the different telescopes to the associated empty array
+# Drawing radom num_events events from all the data 
 length = num_events
-max_value = len(test_pixel_values)
+max_value = len(tel1)
 random_list = random.sample(range(max_value),length) 
 image_nr = 0
 for event_nr in random_list:
-    image = default_mapper.map_image(test_pixel_values_1[event_nr], 'HESS-I')
-    mapped_images_1[image_nr] = image
-    image = default_mapper.map_image(test_pixel_values_2[event_nr], 'HESS-I')
-    mapped_images_2[image_nr] = image
-    image = default_mapper.map_image(test_pixel_values_3[event_nr], 'HESS-I')
-    mapped_images_3[image_nr] = image    
-    image = default_mapper.map_image(test_pixel_values_4[event_nr], 'HESS-I')
-    mapped_images_4[image_nr] = image
+    test_pixel_values_1 = np.expand_dims(tel1[event_nr], axis=1)
+    mapped_images_1[image_nr] = default_mapper.map_image(test_pixel_values_1, 'HESS-I')
+    test_pixel_values_2 = np.expand_dims(tel2[event_nr], axis=1)
+    mapped_images_2[image_nr] = default_mapper.map_image(test_pixel_values_2, 'HESS-I')
+    test_pixel_values_3 = np.expand_dims(tel3[event_nr], axis=1)
+    mapped_images_3[image_nr] = default_mapper.map_image(test_pixel_values_3, 'HESS-I')        
+    test_pixel_values_4 = np.expand_dims(tel4[event_nr], axis=1)
+    mapped_images_4[image_nr] = default_mapper.map_image(test_pixel_values_4, 'HESS-I')
     mapped_labels[image_nr] = labels[event_nr]
     image_nr=image_nr+1
-
 mapped_images = np.array([mapped_images_1,mapped_images_2,mapped_images_3,mapped_images_4])
 print(np.shape(mapped_images_1))
 print(np.shape(mapped_images))
@@ -193,8 +183,8 @@ print(np.shape(mapped_labels))
 
 num_epochs = 20
 batch_size = 256
-rate = 0.25
-reg = 0.01
+rate = 0.2
+reg = 0.002
 patience = 5
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
