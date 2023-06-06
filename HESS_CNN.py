@@ -24,17 +24,17 @@ from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping
 from tensorflow.keras.models import Model, Sequential
 
 
-num_epochs = 20
+num_epochs = 10
 batch_size = 256
-rate = 0.25
-reg = 0.002
+rate = 0.2
+reg = 0.001
 patience = 5
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
 fnr = "_2023-06-05_"
 
-peak_times = np.load('mapped_images_temp.npy')
-event_labels = np.load('mapped_labels_temp.npy')
+peak_times = np.load('mapped_images_tmp.npy')
+event_labels = np.load('mapped_labels_tmp.npy')
 
 # some reshaping for the further use of the timing data in the CNN
 peak_times = peak_times.reshape((*np.shape(peak_times),1))
