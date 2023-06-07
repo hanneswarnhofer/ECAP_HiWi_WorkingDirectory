@@ -6,9 +6,9 @@
 
 unset SLURM_EXPORT_ENV
 
-module load python/3.9-anaconda
+module load python/tensorflow-2.7.0py3.9
 
-source activate myenv
+
 
 pip install --user tables
 pip install --user pandas
@@ -17,9 +17,7 @@ pip install --user glob
 pip install --user sys
 pip install --user argparse
 pip install --user ctapipe
-pip install --user cta-extra
-pip install --user dl1_data_handler
-pip install --user tensorflow
+pip install --user dl1_data_handler==0.10.10
 
 srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex.py 
 
