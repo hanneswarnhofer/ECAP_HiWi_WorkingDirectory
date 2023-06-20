@@ -129,7 +129,10 @@ hex_methods = ['axial_addressing']
 #Load the image mappers
 mappers = {}
 print("Start Initializing Mappers...")
-
+print(os.system("pwd")) 
+current_directory = os.getcwd()
+print(current_directory)
+#raise KeyboardInterrupt 
 print("Initialization time (total for all telescopes):")
 for method in hex_methods:
     print(method)
@@ -138,7 +141,7 @@ for method in hex_methods:
 print("... Finished Initializing Mappers")
 # Reshape arrays for mapping
 # Defining how many events should be mapped and used later on
-num_events = 10000 #len(test_pixel_values) # Takes very long with many events on my PC, for testing: num_events = 10000 (len(test_pixel_values)=106319)
+num_events = len(labels) # Takes very long with many events on my PC, for testing: num_events = 10000 (len(test_pixel_values)=106319)
 
 # Defining image shape and mapper type
 default_mapper = ImageMapper(camera_types=['HESS-I'])
@@ -190,13 +193,13 @@ print(np.shape(mapped_labels))
 # START WITH CNN STUFF
 
 num_epochs = 20
-batch_size = 256
+batch_size = 512
 rate = 0.2
-reg = 0.002
+reg = 0.0015
 patience = 5
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
-fnr = "_2023-06-05_"
+fnr = "_2023-06-20_"
 
 peak_times = mapped_images
 event_labels = mapped_labels
@@ -290,13 +293,19 @@ def create_cnn_model(input_shape):
     model.add(Conv2D(filters=25, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,))
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
+    print("Before first Dropout")
+
     model.add(Dropout(rate))
     model.add(Conv2D(filters=50, kernel_size=kernel_size, activation='relu', padding='same', kernel_regularizer=regularizers.l2(reg)))
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
+    print("After first Dropout")
+
     model.add(Dropout(rate))
     model.add(Conv2D(filters=50, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg)))
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
+
+    print("After second Dropout")
 
     model.add(Dropout(rate))
     model.add(Conv2D(filters=100, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg)))
@@ -354,9 +363,9 @@ early_stopping = EarlyStopping(monitor='val_loss', patience=patience)
 model_multi = run_multiview_model([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4])
 model_multi.summary()
 model_multi.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy']) 
-
+print("Starting the Fitting ...")
 history = model_multi.fit([train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping])
-
+print("... Finished the Fitting")
 # Create the filename, which is used for saving the Accuracy and Loss plots and the history files
 str_num_epochs = '{}'.format(num_epochs)
 str_batch_size = '{}'.format(batch_size)
