@@ -1,5 +1,5 @@
 #!/bin/bash -l
-#SBATCH --gres=gpu:a40:1
+#SBATCH --gres=gpu:a100:1
 #SBATCH --time=24:00:00
 #SBATCH --export=NONE
 

@@ -31,9 +31,17 @@ from tensorflow.keras.layers import Input, Concatenate, concatenate, Dense,Embed
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping
 from tensorflow.keras.models import Model, Sequential
 
+
+
+
 #filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
 #filePath_gamma = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
 filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
+
+#filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
+#filePath_proton = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
+filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"
+
 data_g = tables.open_file(filePath_gamma, mode="r")
 
 print("Successfully opened gamma data!")
@@ -62,9 +70,7 @@ del tel4g_raw
 
 data_g.close()
 
-#filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
-#filePath_proton = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
-filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"
+
 data_p = tables.open_file(filePath_proton, mode="r")
 
 print("Successfully opened proton data!")
@@ -97,6 +103,12 @@ tel2 = np.concatenate((tel2g,tel2p),axis=0)
 tel3 = np.concatenate((tel3g,tel3p),axis=0)
 tel4 = np.concatenate((tel4g,tel4p),axis=0)
 labels = np.concatenate((labelsg_ones,labelsp_zeros),axis=0)
+
+#tel1 = np.vstack((tel1g, tel1p))
+#tel2 = np.vstack((tel2g, tel2p))
+#tel3 = np.vstack((tel3g, tel3p))
+#tel4 = np.vstack((tel4g, tel4p))
+#labels = np.vstack((labelsg_ones, labelsp_zeros))
 
 del tel1p
 del tel1g
@@ -141,7 +153,7 @@ for method in hex_methods:
 print("... Finished Initializing Mappers")
 # Reshape arrays for mapping
 # Defining how many events should be mapped and used later on
-num_events = len(labels) # Takes very long with many events on my PC, for testing: num_events = 10000 (len(test_pixel_values)=106319)
+num_events = 100000 #len(labels) # Takes very long with many events on my PC, for testing: num_events = 10000 (len(test_pixel_values)=106319)
 
 # Defining image shape and mapper type
 default_mapper = ImageMapper(camera_types=['HESS-I'])
@@ -189,17 +201,20 @@ mapped_labels = mapped_labels[:,np.newaxis]
 print(np.shape(mapped_images))
 print(np.shape(mapped_labels))
 
+
+
+
 ########################################################
 # START WITH CNN STUFF
 
 num_epochs = 20
-batch_size = 512
+batch_size = 256
 rate = 0.2
 reg = 0.0015
-patience = 5
+patience = 4
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
-fnr = "_2023-06-20_"
+fnr = "_2023-06-23_"
 
 peak_times = mapped_images
 event_labels = mapped_labels
@@ -255,6 +270,9 @@ print("Test data shape:", np.shape(test_data), "-->",round(100*len_test/(len_tra
 print("Train labels shape:", np.shape(train_labels))
 print("Test labels shape:", np.shape(test_labels))
 
+
+
+
 # split up different "telescopes" for the usage in the seperate single view CNNs (probably in the most long-winded way possible, but lets just ignore that)
 train_data_1 = train_data[:,0,:,:] 
 train_data_2 = train_data[:,1,:,:] 
@@ -281,6 +299,55 @@ print("Train labels 1 shape:", np.shape(train_labels_1))
 
 print("Test data 1 shape:", np.shape(test_data_1))
 print("Test labels 1 shape:", np.shape(test_labels_1))
+
+
+
+class MyGenerator(keras.utils.Sequence):
+
+    def __init__(self,images_1,images_2,images_3,images_4,labels,batch_size=64):
+        self.batch_size = batch_size
+        self.images_1 = images_1
+        self.images_2 = images_2
+        self.images_3 = images_3
+        self.images_4 = images_4
+        self.labels = labels
+        self.sample_count = len(labels[:])
+        self.batch_count = int(self.sample_count/batch_size)
+        self.current_batch = 0
+        self.index = 0
+
+    def __len__(self):
+        return self.batch_count
+    
+    def __getitem__(self,index):
+        
+        X = [self.images_1[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:,:,:],self.images_2[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:,:,:],self.images_3[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:,:,:],self.images_4[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:,:,:]]
+        y = self.labels[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:]
+
+        self.current_batch +=1 
+        self.data = (X,y)
+
+        return self.data
+    
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.index >= self.sample_count:
+            raise StopIteration
+        result = self.__getitem__(self.index) 
+        self.index += 1
+        return result
+
+    def reset_counters(self): 
+        self.current_batch = 0 
+
+        
+    def on_epoch_end(self):
+        self.reset_counters()
+
+
+
 
 input_shape = (72, 72, 1)
 pool_size = 2
@@ -358,13 +425,36 @@ input_4 = Input(shape=input_shape)
 cnn_model_4 = create_cnn_model(input_shape)(input_4)
 
 # include early_stopping here, to see how it changes compared to previous model designs
-early_stopping = EarlyStopping(monitor='val_loss', patience=patience)
+#early_stopping = EarlyStopping(monitor='val_loss', patience=patience)
 
 model_multi = run_multiview_model([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4])
 model_multi.summary()
 model_multi.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy']) 
+
+
+global training_generator
+global testing_generator
+
+training_generator = MyGenerator(train_data_1,train_data_2,train_data_3,train_data_4,train_labels)
+testing_generator = MyGenerator(test_data_1,test_data_2,test_data_3,test_data_4,test_labels)
+
+testing_generator.reset_counters()
+testing_generator.reset_counters()
+
 print("Starting the Fitting ...")
-history = model_multi.fit([train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping])
+early_stopping_callback_1=tf.keras.callbacks.EarlyStopping(monitor='loss',patience=patience,verbose=1,mode='min')
+#history = model_multi.fit(training_generator, epochs=num_epochs, steps_per_epoch=num_steps, validation_data=testing_generator, validation_steps=num_val_steps, callbacks=[early_stopping_callback_1])
+history = model_multi.fit(training_generator, epochs=num_epochs, batch_size= batch_size,validation_data=testing_generator, callbacks=[early_stopping_callback_1])
+
+#######################################
+# Try Generator Stuff
+
+####################################################
+
+
+######################################################
+
+#history = model_multi.fit([train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping])
 print("... Finished the Fitting")
 # Create the filename, which is used for saving the Accuracy and Loss plots and the history files
 str_num_epochs = '{}'.format(num_epochs)
@@ -373,6 +463,7 @@ str_rate = '{}'.format(rate*100)
 str_reg = '{}'.format(reg)
 
 history_name = "history_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + str_reg + "reg" + fnr + ".pkl"
+
 
 # Save the history files for later usage in other scripts
 with open(history_name, 'wb') as file:
