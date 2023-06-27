@@ -31,7 +31,21 @@ from tensorflow.keras.layers import Input, Concatenate, concatenate, Dense,Embed
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping
 from tensorflow.keras.models import Model, Sequential
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-e", "--epochs", type=int)
+parser.add_argument("-b", "--batch_size", type=int)
+parser.add_argument("-r", "--rate", type=float)
+parser.add_argument("-reg", "--regulization", type=float)
 
+args = parser.parse_args()
+num_epochs = args.epochs
+batch_size = args.batch_size
+rate = args.rate
+reg = args.regulization
+#patience = 5
+
+# Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
+fnr = "_2023-06-27_" 
 
 
 #filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
@@ -207,14 +221,18 @@ print(np.shape(mapped_labels))
 ########################################################
 # START WITH CNN STUFF
 
-num_epochs = 20
-batch_size = 256
-rate = 0.2
-reg = 0.0015
-patience = 4
+#num_epochs = 20
+#batch_size = 512
+#rate = 0.2
+#reg = 0.001
+patience = 6
+
+input_shape = (72, 72, 1)
+pool_size = 2
+kernel_size = 6
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
-fnr = "_2023-06-23_"
+fnr = "_2023-06-27_"
 
 peak_times = mapped_images
 event_labels = mapped_labels
@@ -327,7 +345,7 @@ class MyGenerator(keras.utils.Sequence):
         self.current_batch +=1 
         self.data = (X,y)
 
-        return self.data
+        yield self.data
     
     def __iter__(self):
         return self
@@ -349,15 +367,13 @@ class MyGenerator(keras.utils.Sequence):
 
 
 
-input_shape = (72, 72, 1)
-pool_size = 2
-kernel_size = 4
+
 
 # Define the model for the single-view CNNs
 def create_cnn_model(input_shape):
     model = Sequential()
 
-    model.add(Conv2D(filters=25, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,))
+    model.add(Conv2D(filters=40, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,))
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
     print("Before first Dropout")
@@ -369,7 +385,7 @@ def create_cnn_model(input_shape):
     print("After first Dropout")
 
     model.add(Dropout(rate))
-    model.add(Conv2D(filters=50, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg)))
+    model.add(Conv2D(filters=60, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg)))
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
     print("After second Dropout")
@@ -378,27 +394,39 @@ def create_cnn_model(input_shape):
     model.add(Conv2D(filters=100, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg)))
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
+    print("After first Dropout")
+
+    model.add(Dropout(rate))
+    model.add(Conv2D(filters=150, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg)))
+    model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
+
+
     return model
 
 # Define the model for the combination of the previous CNNs and the final CNN for classification
+input_shape = (72, 72, 1)
 
 def run_multiview_model(models,inputs):
 
     merged = concatenate(models)
 
     Dropout1 = Dropout(rate)(merged)
-    Conv_merged1 = Conv2D(filters=25,kernel_size=[2,2],activation='relu',padding='same',input_shape=(48,48,1))(Dropout1)
+    Conv_merged1 = Conv2D(filters=40,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout1)
     MaxPool_merged1 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged1)
 
     Dropout2 = Dropout(rate)(MaxPool_merged1)
-    Conv_merged2 = Conv2D(filters=50,kernel_size=[2,2],activation='relu',padding='same',input_shape=(48,48,1))(Dropout2)
+    Conv_merged2 = Conv2D(filters=50,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout2)
     MaxPool_merged2 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged2)
 
     Dropout3 = Dropout(rate)(MaxPool_merged2)
-    Conv_merged3 = Conv2D(filters=100,kernel_size=[2,2],activation='relu',padding='same',input_shape=(48,48,1))(Dropout3)
+    Conv_merged3 = Conv2D(filters=80,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout3)
     MaxPool_merged3 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged3)
 
-    Flat_merged1 = Flatten()(MaxPool_merged3)
+    Dropout31 = Dropout(rate)(MaxPool_merged3)
+    Conv_merged31 = Conv2D(filters=140,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout31)
+    MaxPool_merged31 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged31)
+
+    Flat_merged1 = Flatten()(MaxPool_merged31)
     Dropout4 = Dropout(rate)(Flat_merged1)
     dense_layer_merged1 = Dense(units=100, activation='relu')(Dropout4)
 
@@ -443,8 +471,17 @@ testing_generator.reset_counters()
 
 print("Starting the Fitting ...")
 early_stopping_callback_1=tf.keras.callbacks.EarlyStopping(monitor='loss',patience=patience,verbose=1,mode='min')
+early_stopping = EarlyStopping(monitor='val_loss', patience=patience)
 #history = model_multi.fit(training_generator, epochs=num_epochs, steps_per_epoch=num_steps, validation_data=testing_generator, validation_steps=num_val_steps, callbacks=[early_stopping_callback_1])
-history = model_multi.fit(training_generator, epochs=num_epochs, batch_size= batch_size,validation_data=testing_generator, callbacks=[early_stopping_callback_1])
+history = model_multi.fit(training_generator, epochs=num_epochs, batch_size= batch_size,validation_data=testing_generator, callbacks=[early_stopping])
+
+str_batch_size = '{}'.format(batch_size)
+str_rate = '{}'.format(rate*100)
+str_reg = '{}'.format(reg)
+str_num_epochs = '{}'.format(num_epochs)
+
+history_name = "history_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + str_reg + "reg" + fnr + ".pkl"
+
 
 #######################################
 # Try Generator Stuff
@@ -484,6 +521,7 @@ ax[1].set_ylabel('Loss')
 ax[1].set_xlabel('Epoch')
 
 print("Image created")
+
 
 filename_savefig = "Test_Cluster_"+ str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + fnr +".png"
 fig.savefig(filename_savefig, bbox_inches='tight')

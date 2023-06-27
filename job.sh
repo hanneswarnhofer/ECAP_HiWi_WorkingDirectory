@@ -16,6 +16,15 @@ module load tensorrt/8.5.3.1-cuda11.8-cudnn8.6
 
 micromamba activate dl1dh
 
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex.py -e 50 -b 256 -r 0.25 -reg 0.0005
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex.py -e 50 -b 256 -r 0.25 -reg 0.001
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex.py -e 50 -b 256 -r 0.25 -reg 0.002
 
-srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex.py 
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex.py -e 50 -b 512 -r 0.25 -reg 0.0005
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex.py -e 50 -b 512 -r 0.25 -reg 0.001
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex.py -e 50 -b 512 -r 0.25 -reg 0.002
+
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex.py -e 50 -b 1024 -r 0.25 -reg 0.0005
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex.py -e 50 -b 1024 -r 0.25 -reg 0.001
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex.py -e 50 -b 1024 -r 0.25 -reg 0.002
 
