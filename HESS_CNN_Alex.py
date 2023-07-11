@@ -31,6 +31,19 @@ from tensorflow.keras.layers import Input, Concatenate, concatenate, Dense,Embed
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping
 from tensorflow.keras.models import Model, Sequential
 
+def plot_image(image):
+    image1, image2, image3, image4 = image
+    fig, ax = plt.subplots(2,2)
+    ax[0,0].set_aspect(1)
+    ax[0,0].pcolor(image1[:,:], cmap='viridis')
+    ax[0,1].set_aspect(1)
+    ax[0,1].pcolor(image2[:,:], cmap='viridis')
+    ax[1,0].set_aspect(1)
+    ax[1,0].pcolor(image3[:,:], cmap='viridis')
+    ax[1,1].set_aspect(1)
+    ax[1,1].pcolor(image4[:,:], cmap='viridis') 
+    plt.show()
+
 parser = argparse.ArgumentParser()
 parser.add_argument("-e", "--epochs", type=int)
 parser.add_argument("-b", "--batch_size", type=int)
@@ -45,16 +58,16 @@ reg = args.regulization
 #patience = 5
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
-fnr = "_2023-06-27_" 
+fnr = "_2023-07-07_newSet" 
+num_events = 5000
 
-
-#filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
+filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
 #filePath_gamma = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
-filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
+#filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
 
-#filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
+filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
 #filePath_proton = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
-filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"
+#filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"
 
 data_g = tables.open_file(filePath_gamma, mode="r")
 
@@ -167,7 +180,7 @@ for method in hex_methods:
 print("... Finished Initializing Mappers")
 # Reshape arrays for mapping
 # Defining how many events should be mapped and used later on
-num_events = 100000 #len(labels) # Takes very long with many events on my PC, for testing: num_events = 10000 (len(test_pixel_values)=106319)
+#num_events = 1000 #len(labels) # Takes very long with many events on my PC, for testing: num_events = 10000 (len(test_pixel_values)=106319)
 
 # Defining image shape and mapper type
 default_mapper = ImageMapper(camera_types=['HESS-I'])
@@ -225,14 +238,14 @@ print(np.shape(mapped_labels))
 #batch_size = 512
 #rate = 0.2
 #reg = 0.001
-patience = 6
+patience = 4
 
 input_shape = (72, 72, 1)
 pool_size = 2
-kernel_size = 6
+kernel_size = 4
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
-fnr = "_2023-06-27_"
+#fnr = "_2023-07-03_"
 
 peak_times = mapped_images
 event_labels = mapped_labels
@@ -345,7 +358,7 @@ class MyGenerator(keras.utils.Sequence):
         self.current_batch +=1 
         self.data = (X,y)
 
-        yield self.data
+        return self.data
     
     def __iter__(self):
         return self
@@ -364,7 +377,11 @@ class MyGenerator(keras.utils.Sequence):
     def on_epoch_end(self):
         self.reset_counters()
 
-
+class OnEpochBegin(keras.callbacks.Callback): # Callback class called on epoch begin to reset counters
+    def on_epoch_begin(self, epoch, logs=None):
+        training_generator.reset_counters()
+        testing_generator.reset_counters()
+        print("Epoch Begin")
 
 
 
@@ -376,25 +393,25 @@ def create_cnn_model(input_shape):
     model.add(Conv2D(filters=40, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,))
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
-    print("Before first Dropout")
+    #print("Before first Dropout")
 
     model.add(Dropout(rate))
     model.add(Conv2D(filters=50, kernel_size=kernel_size, activation='relu', padding='same', kernel_regularizer=regularizers.l2(reg)))
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
-    print("After first Dropout")
+    #print("After first Dropout")
 
     model.add(Dropout(rate))
     model.add(Conv2D(filters=60, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg)))
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
-    print("After second Dropout")
+    #print("After second Dropout")
 
     model.add(Dropout(rate))
     model.add(Conv2D(filters=100, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg)))
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
-    print("After first Dropout")
+    #print("After first Dropout")
 
     model.add(Dropout(rate))
     model.add(Conv2D(filters=150, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg)))
@@ -469,11 +486,18 @@ testing_generator = MyGenerator(test_data_1,test_data_2,test_data_3,test_data_4,
 testing_generator.reset_counters()
 testing_generator.reset_counters()
 
+
+#also add some checkpoints
+early_stopping_callback_1=tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=patience,verbose=1,mode='min')
+#checkpoints_2=tf.keras.callbacks.ModelCheckpoint('/home/hpc/b129dc/b129dc26/'+fnr+'checkpoints.ckpt',save_weights_only=True,save_best_only=True)
+#callbacks_fixed = [OnEpochBegin(),early_stopping_callback_1,checkpoints_2]
+
 print("Starting the Fitting ...")
-early_stopping_callback_1=tf.keras.callbacks.EarlyStopping(monitor='loss',patience=patience,verbose=1,mode='min')
-early_stopping = EarlyStopping(monitor='val_loss', patience=patience)
+#early_stopping = EarlyStopping(monitor='val_loss', patience=patience)
 #history = model_multi.fit(training_generator, epochs=num_epochs, steps_per_epoch=num_steps, validation_data=testing_generator, validation_steps=num_val_steps, callbacks=[early_stopping_callback_1])
-history = model_multi.fit(training_generator, epochs=num_epochs, batch_size= batch_size,validation_data=testing_generator, callbacks=[early_stopping])
+history = model_multi.fit(training_generator, epochs=num_epochs, batch_size= batch_size,validation_data=testing_generator, callbacks=[early_stopping_callback_1])
+#history = model_multi.fit([train_data[:,i,:,:] for i in range(4)],train_labels, epochs=num_epochs, batch_size= batch_size,validation_data=([test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping_callback_1])
+
 
 str_batch_size = '{}'.format(batch_size)
 str_rate = '{}'.format(rate*100)
