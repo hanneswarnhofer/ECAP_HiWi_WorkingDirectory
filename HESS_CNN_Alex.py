@@ -16,6 +16,10 @@ import glob
 import pickle
 import sys
 import argparse
+import h5py
+import os.path
+import inspect
+import json
 
 from ctapipe.io import EventSource
 from ctapipe import utils
@@ -31,7 +35,181 @@ from tensorflow.keras.layers import Input, Concatenate, concatenate, Dense,Embed
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping
 from tensorflow.keras.models import Model, Sequential
 
-def plot_image(image):
+
+class DataManager():
+    """ Data class used to manage the HDF5 data files (simulations + Auger data).
+        data_path: data_path of HDF5 file, (hint: use blosc compression to ensure adequate decompression speed,
+        to mitigate training bottleneck due to a slow data pipeline)
+        params:
+            data_path = path to HDF5 datset
+        optional params:
+            stats: data statistics (stats.json - needed for scaling the dataset)
+            tasks: list of tasks to be included (default: ['axis', 'core', 'energy', 'xmax'])
+            generator_fn: generator function used for looping over data, generator function needs to have indices and
+                          shuffle args.
+            ad_map_fn: "advanced mapping function" the function used to map the final dataset. Here an additional
+                       preprocessing can be implemented which is mapped during training on the
+                       cpu (based on tf.data.experimental.map_and_batch)
+    """
+
+    def __init__(self, data_path, stats=None, tasks=['axis', 'impact', 'energy', 'classification']):
+        ''' init of DataManager class, to manage simulated (CORSIKA/Offline) and measured dataset '''
+        np.random.seed(1)
+        self.data_path = data_path
+
+    def open_ipython(self):
+        from IPython import embed
+        embed()
+
+    @property
+    def is_data(self):
+        return self.type == "Data"
+
+    @property
+    def is_mc(self):
+        return self.type == "MC"
+
+    def get_h5_file(self):
+        return h5py.File(self.data_path, "r")
+
+    def walk_tree(self, details=True):
+        """ Draw the tree of yout HDF5 file to see the hierachy of your dataset
+            params: detail(activate details to see shapes and used compression ops, Default: True)
+        """
+
+        def walk(file, iter_str=''):
+            try:
+                keys = file.keys()
+            except AttributeError:
+                keys = []
+
+            for key in keys:
+                try:
+                    if details:
+                        file[key].dtype
+                        print(iter_str + str(file[key]))
+                    else:
+                        print(iter_str + key)
+                except AttributeError:
+                    print(iter_str + key)
+                    walk(file[key], "   " + iter_str)
+
+        with h5py.File(self.data_path, "r") as file:
+            print("filename:", file.filename)
+            for key in file.keys():
+                print(' - ' + key)
+                walk(file[key], iter_str='   - ')
+
+    def extract_info(self, path):
+        with self.get_h5_file() as f:
+            data = f[path]
+            y = np.stack(data[:].tolist())
+
+        return {k: y[:, i] for i, k in enumerate(data.dtype.names)}, dict(data.dtype.descr)
+
+    def make_mc_data(self):
+        return self.extract_info("simulation/event/subarray/shower")
+
+
+class MyGenerator(keras.utils.Sequence):
+
+    def __init__(self,images_1,images_2,images_3,images_4,labels,batch_size=64):
+        self.batch_size = batch_size
+        self.images_1 = images_1
+        self.images_2 = images_2
+        self.images_3 = images_3
+        self.images_4 = images_4
+        self.labels = labels
+        self.sample_count = len(labels[:])
+        self.batch_count = int(self.sample_count/batch_size)
+        self.current_batch = 0
+        self.index = 0
+
+    def __len__(self):
+        return self.batch_count
+    
+    def __getitem__(self,index):
+        
+        X = [self.images_1[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:,:,:],self.images_2[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:,:,:],self.images_3[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:,:,:],self.images_4[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:,:,:]]
+        y = self.labels[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:]
+
+        self.current_batch +=1 
+        self.data = (X,y)
+
+        return self.data
+    
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.index >= self.sample_count:
+            raise StopIteration
+        result = self.__getitem__(self.index) 
+        self.index += 1
+        return result
+
+    def reset_counters(self): 
+        self.current_batch = 0 
+
+        
+    def on_epoch_end(self):
+        self.reset_counters()
+
+class OnEpochBegin(keras.callbacks.Callback): # Callback class called on epoch begin to reset counters
+    def on_epoch_begin(self, epoch, logs=None):
+        training_generator.reset_counters()
+        testing_generator.reset_counters()
+        print("Epoch Begin")
+
+
+def plot_image(image, name=None):
+    fig, ax = plt.subplots(1)
+    ax.set_aspect(1)
+    ax.pcolor(np.flip(image[:, :, 0], axis=(0)), cmap='viridis', vmin=-5)
+    plt.show()
+    fig.savefig("./binned_image%s.png" % name)
+
+
+def re_index_ct14(image):
+    return image[5:, :, :]
+
+def make_hess_geometry(file=None):
+    # quick fix for dl1 data handler to circumvent to use ctapipe
+    if file is None:
+        with open(os.path.join(os.getcwd(), "geometry2d3.json")) as f: 
+            attr_dict = json.load(f)
+
+        data_ct14 = attr_dict["ct14_geo"]
+        data_ct5 = attr_dict["ct5_geo"]
+    else:
+        data_ct14 = file["configuration/instrument/telescope/camera/geometry_0"][:].tolist()
+        data_ct5 = file["configuration/instrument/telescope/camera/geometry_1"][:].tolist()
+
+    class Geometry():
+        def __init__(self, data):
+            self.pix_id, self.pix_x, self.pix_y, self.pix_area = np.stack(data).T.astype(np.float32)
+            self.pos_x = self.pix_x
+            self.pos_y = self.pix_y
+
+        def get_pix_pos(self):
+            return np.column_stack([self.pix_x, self.pix_y]).T
+
+    return Geometry(data_ct14), Geometry(data_ct5)
+
+def get_current_path():
+    filename = inspect.getframeinfo(inspect.currentframe()).filename
+    return os.path.dirname(os.path.abspath(filename))
+
+
+def rotate(pix_pos, rotation_angle=0):
+    rotation_angle = rotation_angle * np.pi / 180.0
+    rotation_matrix = np.matrix([[np.cos(rotation_angle), -np.sin(rotation_angle)],
+                                 [np.sin(rotation_angle), np.cos(rotation_angle)], ], dtype=float)
+
+    pixel_positions = np.squeeze(np.asarray(np.dot(rotation_matrix, pix_pos)))
+    return pixel_positions
+
+def plot_image_2by2(image):
     image1, image2, image3, image4 = image
     fig, ax = plt.subplots(2,2)
     ax[0,0].set_aspect(1)
@@ -58,78 +236,107 @@ reg = args.regulization
 #patience = 5
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
-fnr = "_2023-07-07_newSet" 
-num_events = 5000
+fnr = "_2023-07-18_newSet" 
+num_events = 100000
 
-filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
+#filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
 #filePath_gamma = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
-#filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
+filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
 
-filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
+#filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
 #filePath_proton = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
-#filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"
+filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"
 
-data_g = tables.open_file(filePath_gamma, mode="r")
+
+dm_gamma = DataManager(filePath_gamma)
+f_g = dm_gamma.get_h5_file()
+#e = tables.open_file(path, mode="r")
+
+tel1g_raw = f_g["dl1/event/telescope/images/tel_001"][:]
+tel2g_raw = f_g["dl1/event/telescope/images/tel_002"][:]
+tel3g_raw = f_g["dl1/event/telescope/images/tel_003"][:]
+tel4g_raw = f_g["dl1/event/telescope/images/tel_004"][:]
+
+#data_g = tables.open_file(filePath_gamma, mode="r")
 
 print("Successfully opened gamma data!")
 #print(data_g)
 
 
 # Assigning telescope data to different arrays
-tel1g_raw = data_g.get_node('/dl1/event/telescope/images/tel_001').read()
-tel2g_raw = data_g.get_node('/dl1/event/telescope/images/tel_002').read()
-tel3g_raw = data_g.get_node('/dl1/event/telescope/images/tel_003').read()
-tel4g_raw = data_g.get_node('/dl1/event/telescope/images/tel_004').read()
+#tel1g_raw = data_g.get_node('/dl1/event/telescope/images/tel_001').read()
+#tel2g_raw = data_g.get_node('/dl1/event/telescope/images/tel_002').read()
+#tel3g_raw = data_g.get_node('/dl1/event/telescope/images/tel_003').read()
+#tel4g_raw = data_g.get_node('/dl1/event/telescope/images/tel_004').read()
 
 # Reshaping arrays and extracting the data
-tel1g = np.stack([data[-1] for data in tel1g_raw])
-tel2g = np.stack([data[-1] for data in tel2g_raw])
-tel3g = np.stack([data[-1] for data in tel3g_raw])
-tel4g = np.stack([data[-1] for data in tel4g_raw])
+#tel1g = np.stack([data[-1] for data in tel1g_raw])
+#tel2g = np.stack([data[-1] for data in tel2g_raw])
+#tel3g = np.stack([data[-1] for data in tel3g_raw])
+#tel4g = np.stack([data[-1] for data in tel4g_raw])
 
 labelsg = np.stack([data[2] for data in tel1g_raw])
 labelsg_ones = np.ones_like(labelsg)
+
+#del tel1g_raw
+#del tel2g_raw
+#del tel3g_raw
+#del tel4g_raw
+
+f_g.close()
+
+dm_proton = DataManager(filePath_proton)
+f_p = dm_proton.get_h5_file()
+#e = tables.open_file(path, mode="r")
+
+tel1p_raw = f_p["dl1/event/telescope/images/tel_001"][:]
+tel2p_raw = f_p["dl1/event/telescope/images/tel_002"][:]
+tel3p_raw = f_p["dl1/event/telescope/images/tel_003"][:]
+tel4p_raw = f_p["dl1/event/telescope/images/tel_004"][:]
+
+#data_p = tables.open_file(filePath_proton, mode="r")
+
+print("Successfully opened proton data!")
+#print(data_p)
+
+# Assigning telescope data to different arrays
+#tel1p_raw = data_p.get_node('/dl1/event/telescope/images/tel_001').read()
+#tel2p_raw = data_p.get_node('/dl1/event/telescope/images/tel_002').read()
+#tel3p_raw = data_p.get_node('/dl1/event/telescope/images/tel_003').read()
+#tel4p_raw = data_p.get_node('/dl1/event/telescope/images/tel_004').read()
+
+# Reshaping arrays and extracting the data
+#tel1p = np.stack([data[-1] for data in tel1p_raw])
+#tel2p = np.stack([data[-1] for data in tel2p_raw])
+#tel3p = np.stack([data[-1] for data in tel3p_raw])
+#tel4p = np.stack([data[-1] for data in tel4p_raw])
+
+labelsp = np.stack([data[2] for data in tel1p_raw])
+labelsp_zeros = np.zeros_like(labelsp)
+
+tel1 = np.concatenate((tel1g_raw,tel1p_raw),axis=0)
+tel2 = np.concatenate((tel2g_raw,tel2p_raw),axis=0)
+tel3 = np.concatenate((tel3g_raw,tel3p_raw),axis=0)
+tel4 = np.concatenate((tel4g_raw,tel4p_raw),axis=0)
+labels = np.concatenate((labelsg_ones,labelsp_zeros),axis=0)
 
 del tel1g_raw
 del tel2g_raw
 del tel3g_raw
 del tel4g_raw
 
-data_g.close()
-
-
-data_p = tables.open_file(filePath_proton, mode="r")
-
-print("Successfully opened proton data!")
-#print(data_p)
-
-# Assigning telescope data to different arrays
-tel1p_raw = data_p.get_node('/dl1/event/telescope/images/tel_001').read()
-tel2p_raw = data_p.get_node('/dl1/event/telescope/images/tel_002').read()
-tel3p_raw = data_p.get_node('/dl1/event/telescope/images/tel_003').read()
-tel4p_raw = data_p.get_node('/dl1/event/telescope/images/tel_004').read()
-
-# Reshaping arrays and extracting the data
-tel1p = np.stack([data[-1] for data in tel1p_raw])
-tel2p = np.stack([data[-1] for data in tel2p_raw])
-tel3p = np.stack([data[-1] for data in tel3p_raw])
-tel4p = np.stack([data[-1] for data in tel4p_raw])
-
-labelsp = np.stack([data[2] for data in tel1p_raw])
-labelsp_zeros = np.zeros_like(labelsp)
-
 del tel1p_raw
 del tel2p_raw
 del tel3p_raw
 del tel4p_raw
 
-data_p.close()
+f_p.close()
 
-tel1 = np.concatenate((tel1g,tel1p),axis=0)
-tel2 = np.concatenate((tel2g,tel2p),axis=0)
-tel3 = np.concatenate((tel3g,tel3p),axis=0)
-tel4 = np.concatenate((tel4g,tel4p),axis=0)
-labels = np.concatenate((labelsg_ones,labelsp_zeros),axis=0)
+#tel1 = np.concatenate((tel1g,tel1p),axis=0)
+#tel2 = np.concatenate((tel2g,tel2p),axis=0)
+#tel3 = np.concatenate((tel3g,tel3p),axis=0)
+#tel4 = np.concatenate((tel4g,tel4p),axis=0)
+#labels = np.concatenate((labelsg_ones,labelsp_zeros),axis=0)
 
 #tel1 = np.vstack((tel1g, tel1p))
 #tel2 = np.vstack((tel2g, tel2p))
@@ -137,14 +344,14 @@ labels = np.concatenate((labelsg_ones,labelsp_zeros),axis=0)
 #tel4 = np.vstack((tel4g, tel4p))
 #labels = np.vstack((labelsg_ones, labelsp_zeros))
 
-del tel1p
-del tel1g
-del tel2p
-del tel2g
-del tel3p
-del tel3g
-del tel4p
-del tel4g
+#del tel1p
+#del tel1g
+#del tel2p
+#del tel2g
+#del tel3p
+#del tel3g
+#del tel4p
+#del tel4g
 del labelsp
 del labelsg
 del labelsp_zeros
@@ -157,6 +364,19 @@ print(np.shape(tel4))
 print(np.shape(labels))
 print(labels)
 
+geo_ct14, geo_ct5 = make_hess_geometry()
+print(os.getcwd())
+ct_14_mapper = ImageMapper(camera_types=["HESS-I"], pixel_positions={"HESS-I": rotate(geo_ct14.get_pix_pos())}, mapping_method={"HESS-I": "axial_addressing"})
+
+#test_img_ct14 = x3[50][3][:,np.newaxis]
+
+#image_ct14 = ct_14_mapper.map_image(test_img_ct14, "HESS-I")
+#image_ct14 = re_index_ct14(image_ct14)
+#plot_image(image_ct14, name="ct14")
+
+#num_events = 100 #len(labels) # Takes very long with many events on my PC, for testing: num_events = 10000 (len(test_pixel_values)=106319)
+
+'''
 # Define the camera types and mapping methods: HESS-I only
 
 hex_cams = ['HESS-I']
@@ -186,12 +406,12 @@ print("... Finished Initializing Mappers")
 default_mapper = ImageMapper(camera_types=['HESS-I'])
 #padding_mapper = ImageMapper(padding={cam: 10 for cam in camera_types}, camera_types=["HESS-I"])
 #image_shape = default_mapper.map_image(tel1[0], 'HESS-I').shape
-
+'''
 # Creating empty arrays for mapped images and the associated labels
-mapped_images_1 = np.empty((num_events, 72,72,1))
-mapped_images_2 = np.empty((num_events, 72,72,1))
-mapped_images_3 = np.empty((num_events, 72,72,1))
-mapped_images_4 = np.empty((num_events, 72,72,1))
+mapped_images_1 = np.empty((num_events, 41,41,1))
+mapped_images_2 = np.empty((num_events, 41,41,1))
+mapped_images_3 = np.empty((num_events, 41,41,1))
+mapped_images_4 = np.empty((num_events, 41,41,1))
 mapped_labels = np.empty(num_events)
 
 # Using the map_image function for mapping the data from the different telescopes to the associated empty array
@@ -201,6 +421,7 @@ max_value = len(tel1)
 #random_list = random.sample(range(max_value),length) 
 random_list = np.random.randint(max_value, size=length)
 image_nr = 0
+'''
 print("Start Mapping...")
 for event_nr in random_list:
     test_pixel_values_1 = np.expand_dims(tel1[event_nr], axis=1)
@@ -211,6 +432,26 @@ for event_nr in random_list:
     mapped_images_3[image_nr] = default_mapper.map_image(test_pixel_values_3, 'HESS-I')        
     test_pixel_values_4 = np.expand_dims(tel4[event_nr], axis=1)
     mapped_images_4[image_nr] = default_mapper.map_image(test_pixel_values_4, 'HESS-I')
+    mapped_labels[image_nr] = labels[event_nr]
+    image_nr=image_nr+1
+
+print("... Finished Mapping")
+'''
+
+print("Start Mapping...")
+for event_nr in random_list:
+    #test_pixel_values_1 = np.expand_dims(tel1[event_nr], axis=1)
+    mapped_images_1[image_nr] = ct_14_mapper.map_image(tel1[event_nr][3][:, np.newaxis], 'HESS-I')
+    #mapped_images_1 = re_index_ct14(mapped_images_1)
+    #test_pixel_values_2 = np.expand_dims(tel2[event_nr][3][:, np.newaxis], axis=1)
+    mapped_images_2[image_nr] = ct_14_mapper.map_image(tel2[event_nr][3][:, np.newaxis], 'HESS-I')
+    #mapped_images_2 = re_index_ct14(mapped_images_2)
+    #test_pixel_values_3 = np.expand_dims(tel3[event_nr][3][:, np.newaxis], axis=1)
+    mapped_images_3[image_nr] = ct_14_mapper.map_image(tel3[event_nr][3][:, np.newaxis], 'HESS-I')   
+    #mapped_images_3 = re_index_ct14(mapped_images_3)     
+    #test_pixel_values_4 = np.expand_dims(tel4[event_nr][3][:, np.newaxis], axis=1)
+    mapped_images_4[image_nr] = ct_14_mapper.map_image(tel4[event_nr][3][:, np.newaxis], 'HESS-I')
+    #mapped_images_4 = re_index_ct14(mapped_images_4)
     mapped_labels[image_nr] = labels[event_nr]
     image_nr=image_nr+1
 
@@ -333,57 +574,6 @@ print("Test labels 1 shape:", np.shape(test_labels_1))
 
 
 
-class MyGenerator(keras.utils.Sequence):
-
-    def __init__(self,images_1,images_2,images_3,images_4,labels,batch_size=64):
-        self.batch_size = batch_size
-        self.images_1 = images_1
-        self.images_2 = images_2
-        self.images_3 = images_3
-        self.images_4 = images_4
-        self.labels = labels
-        self.sample_count = len(labels[:])
-        self.batch_count = int(self.sample_count/batch_size)
-        self.current_batch = 0
-        self.index = 0
-
-    def __len__(self):
-        return self.batch_count
-    
-    def __getitem__(self,index):
-        
-        X = [self.images_1[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:,:,:],self.images_2[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:,:,:],self.images_3[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:,:,:],self.images_4[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:,:,:]]
-        y = self.labels[self.current_batch*self.batch_size:(self.current_batch+1)*self.batch_size,:]
-
-        self.current_batch +=1 
-        self.data = (X,y)
-
-        return self.data
-    
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if self.index >= self.sample_count:
-            raise StopIteration
-        result = self.__getitem__(self.index) 
-        self.index += 1
-        return result
-
-    def reset_counters(self): 
-        self.current_batch = 0 
-
-        
-    def on_epoch_end(self):
-        self.reset_counters()
-
-class OnEpochBegin(keras.callbacks.Callback): # Callback class called on epoch begin to reset counters
-    def on_epoch_begin(self, epoch, logs=None):
-        training_generator.reset_counters()
-        testing_generator.reset_counters()
-        print("Epoch Begin")
-
-
 
 
 # Define the model for the single-view CNNs
@@ -421,7 +611,7 @@ def create_cnn_model(input_shape):
     return model
 
 # Define the model for the combination of the previous CNNs and the final CNN for classification
-input_shape = (72, 72, 1)
+input_shape = (41, 41, 1)
 
 def run_multiview_model(models,inputs):
 
