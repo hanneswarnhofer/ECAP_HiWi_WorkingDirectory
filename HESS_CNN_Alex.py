@@ -209,18 +209,40 @@ def rotate(pix_pos, rotation_angle=0):
     pixel_positions = np.squeeze(np.asarray(np.dot(rotation_matrix, pix_pos)))
     return pixel_positions
 
-def plot_image_2by2(image):
-    image1, image2, image3, image4 = image
+def plot_image_2by2(image,event_nr,labels):
+    image1 = image[:,0,:,:][event_nr]
+    image2 = image[:,1,:,:][event_nr]
+    image3 = image[:,2,:,:][event_nr]
+    image4 = image[:,3,:,:][event_nr]
     fig, ax = plt.subplots(2,2)
     ax[0,0].set_aspect(1)
-    ax[0,0].pcolor(image1[:,:], cmap='viridis')
+    ax[0,0].pcolor(np.flip(image1[:,:,0],axis=(0)), cmap='viridis',vmin=-5)
     ax[0,1].set_aspect(1)
-    ax[0,1].pcolor(image2[:,:], cmap='viridis')
+    ax[0,1].pcolor(np.flip(image2[:,:,0],axis=(0)), cmap='viridis',vmin=-5)
     ax[1,0].set_aspect(1)
-    ax[1,0].pcolor(image3[:,:], cmap='viridis')
+    ax[1,0].pcolor(np.flip(image3[:,:,0],axis=(0)), cmap='viridis',vmin=-5)
     ax[1,1].set_aspect(1)
-    ax[1,1].pcolor(image4[:,:], cmap='viridis') 
-    plt.show()
+    ax[1,1].pcolor(np.flip(image4[:,:,0],axis=(0)), cmap='viridis',vmin=-5) 
+
+    label1 = labels[:,0,:,:][event_nr].ravel()[0]
+    label2 = labels[:,1,:,:][event_nr].ravel()[0]
+    label3 = labels[:,2,:,:][event_nr].ravel()[0]
+    label4 = labels[:,3,:,:][event_nr].ravel()[0]
+
+    str_label1 = '{}'.format(label1)
+    str_label2 = '{}'.format(label2)
+    str_label3 = '{}'.format(label3)
+    str_label4 = '{}'.format(label4)
+
+    ax[0, 0].text(0.05, 0.95, str_label1, transform=ax[0, 0].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
+    ax[0, 1].text(0.05, 0.95, str_label2, transform=ax[0, 0].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
+    ax[1, 0].text(0.05, 0.95, str_label3, transform=ax[0, 0].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
+    ax[1, 1].text(0.05, 0.95, str_label4, transform=ax[0, 0].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
+
+    str_evnr = '{}'.format(event_nr)
+    name = "Test_figure_evnr_" + str_evnr + ".png"
+    fig.savefig(name)
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-e", "--epochs", type=int)
@@ -481,7 +503,7 @@ print(np.shape(mapped_labels))
 #reg = 0.001
 patience = 4
 
-input_shape = (72, 72, 1)
+input_shape = (41, 41, 1)
 pool_size = 2
 kernel_size = 4
 
@@ -573,7 +595,10 @@ print("Test data 1 shape:", np.shape(test_data_1))
 print("Test labels 1 shape:", np.shape(test_labels_1))
 
 
-
+plot_image_2by2(train_data,4,train_labels_multishape)
+plot_image_2by2(train_data,40,train_labels_multishape)
+plot_image_2by2(train_data,400,train_labels_multishape)
+plot_image_2by2(train_data,4000,train_labels_multishape)
 
 
 # Define the model for the single-view CNNs
