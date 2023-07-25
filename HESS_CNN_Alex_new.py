@@ -127,8 +127,7 @@ class MyGenerator(keras.utils.Sequence):
         return self.batch_count
 
 
-        
-    
+''' Previous getitem object
     def __getitem__(self,index):
         idx_low  = self.current_batch*self.batch_size
         idx_high = (self.current_batch+1)*self.batch_size
@@ -137,6 +136,31 @@ class MyGenerator(keras.utils.Sequence):
 
         self.current_batch +=1 
         self.data = (X,y)
+
+        return self.data
+        
+''' 
+
+    def __getitem__(self,index):
+        idx_low  = self.current_batch*self.batch_size
+        idx_high = (self.current_batch+1)*self.batch_size
+        images_batch_1 = self.images_1[idx_low:idx_high]
+        images_batch_2 = self.images_2[idx_low:idx_high]
+        images_batch_3 = self.images_3[idx_low:idx_high]
+        images_batch_4 = self.images_4[idx_low:idx_high]
+
+        labels_batch = np.array(self.labels[idx_low:idx_high])
+
+        # Assuming your images are of shape (41, 41, 1), you may need to adjust this based on your actual image shape
+        images_batch_1 = np.expand_dims(images_batch_1, axis=-1)
+        images_batch_2 = np.expand_dims(images_batch_2, axis=-1)
+        images_batch_3 = np.expand_dims(images_batch_3, axis=-1)
+        images_batch_4 = np.expand_dims(images_batch_4, axis=-1)
+
+        self.current_batch +=1 
+        self.data = ([images_batch_1, images_batch_2, images_batch_3, images_batch_4], labels_batch)
+
+        # MAYBE CHECK: X = np.array([...]) and y = labels_batch
 
         return self.data
     
@@ -466,7 +490,7 @@ print("Test labels 1 shape:", np.shape(test_labels_1))
 #plot_image_2by2(train_data,400,train_labels_multishape)
 #plot_image_2by2(train_data,4000,train_labels_multishape)
 
- Define the model for the single-view CNNs
+#Define the model for the single-view CNNs
 def create_cnn_model(input_shape):
     model = Sequential()
 
@@ -560,8 +584,8 @@ model_multi.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accura
 global training_generator
 global testing_generator
 
-training_generator = MyGenerator(train_data_1,train_data_2,train_data_3,train_data_4,train_labels)
-testing_generator = MyGenerator(test_data_1,test_data_2,test_data_3,test_data_4,test_labels)
+training_generator = MyGenerator(train_data_1,train_data_2,train_data_3,train_data_4,train_labels,batch_size=batch_size)
+testing_generator = MyGenerator(test_data_1,test_data_2,test_data_3,test_data_4,test_labels,batch_size=batch_size)
 
 # Generate data and plot the first batch
 batch_index = 0  
