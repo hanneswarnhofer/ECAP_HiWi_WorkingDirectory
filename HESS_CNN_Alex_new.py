@@ -21,6 +21,9 @@ import os.path
 import inspect
 import json
 
+from datetime import datetime
+import time
+
 from ctapipe.io import EventSource
 from ctapipe import utils
 from ctapipe.instrument.camera import CameraGeometry
@@ -31,7 +34,7 @@ from dl1_data_handler.image_mapper import ImageMapper
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers, models, callbacks, optimizers, regularizers
-from tensorflow.keras.layers import Input, Concatenate, concatenate, Dense,Embedding, Conv2D, Conv3D, MaxPooling2D, MaxPooling3D, Flatten, Dropout, ConvLSTM2D, BatchNormalization
+from tensorflow.keras.layers import Input, Concatenate, concatenate, Dense,Embedding, Conv2D, Conv3D, MaxPooling2D, MaxPooling3D, Flatten, Dropout, ConvLSTM2D, BatchNormalization, LeakyReLU
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping
 from tensorflow.keras.models import Model, Sequential
 
@@ -53,7 +56,8 @@ class DataManager():
 
     def __init__(self, data_path, stats=None, tasks=['axis', 'impact', 'energy', 'classification']):
         ''' init of DataManager class, to manage simulated (CORSIKA/Offline) and measured dataset '''
-        np.random.seed(1)
+        current_timestamp = int(time.time())
+        np.random.seed(current_timestamp)
         self.data_path = data_path
 
     def open_ipython(self):
@@ -127,7 +131,7 @@ class MyGenerator(keras.utils.Sequence):
         return self.batch_count
 
 
-''' Previous getitem object
+
     def __getitem__(self,index):
         idx_low  = self.current_batch*self.batch_size
         idx_high = (self.current_batch+1)*self.batch_size
@@ -139,7 +143,7 @@ class MyGenerator(keras.utils.Sequence):
 
         return self.data
         
-''' 
+    ''' 
 
     def __getitem__(self,index):
         idx_low  = self.current_batch*self.batch_size
@@ -151,19 +155,19 @@ class MyGenerator(keras.utils.Sequence):
 
         labels_batch = np.array(self.labels[idx_low:idx_high])
 
-        # Assuming your images are of shape (41, 41, 1), you may need to adjust this based on your actual image shape
+        # Assuming your images are of shape (41, 41, 1)
         images_batch_1 = np.expand_dims(images_batch_1, axis=-1)
         images_batch_2 = np.expand_dims(images_batch_2, axis=-1)
         images_batch_3 = np.expand_dims(images_batch_3, axis=-1)
         images_batch_4 = np.expand_dims(images_batch_4, axis=-1)
 
         self.current_batch +=1 
-        self.data = ([images_batch_1, images_batch_2, images_batch_3, images_batch_4], labels_batch)
+        self.data = (np.array([images_batch_1, images_batch_2, images_batch_3, images_batch_4]), labels_batch)
 
         # MAYBE CHECK: X = np.array([...]) and y = labels_batch
 
         return self.data
-    
+    '''
     def __iter__(self):
         return self
 
@@ -182,7 +186,7 @@ class MyGenerator(keras.utils.Sequence):
         image_batch_3 = self.images_3
         image_batch_4 = self.images_4
         label_batch = self.labels
-        plot_image_2by2(image_batch_1,image_batch_2,image_batch_3,image_batch_4, labels=label_batch, event_nr=event_nr)
+        plot_image_2by2(image_batch_1,image_batch_2,image_batch_3,image_batch_4, labels=label_batch, event_nr=event_nr,string="generator")
 
     def __shape__(self):
         print("Shape of self.images1: ",np.shape(self.images_1))
@@ -200,6 +204,7 @@ class OnEpochBegin(keras.callbacks.Callback): # Callback class called on epoch b
         training_generator.reset_counters()
         testing_generator.reset_counters()
         print("Epoch Begin")
+
 
 def re_index_ct14(image):
     return image[5:, :, :]
@@ -234,15 +239,24 @@ def get_current_path():
 def rotate(pix_pos, rotation_angle=0):
     rotation_angle = rotation_angle * np.pi / 180.0
     rotation_matrix = np.matrix([[np.cos(rotation_angle), -np.sin(rotation_angle)],
-                                 [np.sin(rotation_angle), np.cos(rotation_angle)], ], dtype=float)
+                                [np.sin(rotation_angle), np.cos(rotation_angle)], ], dtype=float)
 
     pixel_positions = np.squeeze(np.asarray(np.dot(rotation_matrix, pix_pos)))
     return pixel_positions
 
-def plot_image_2by2(image1,image2,image3,image4,event_nr,labels):
+def plot_image_2by2(train_data,event_nr,labels,string):
+
     
 
+    current_datetime = datetime.now()
+    formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M")
+
     print("Plotting Example Event. Event Nr: ", event_nr)
+
+    image1 = train_data[:,0,:,:] 
+    image2 = train_data[:,1,:,:] 
+    image3 = train_data[:,2,:,:] 
+    image4 = train_data[:,3,:,:] 
 
     pltimage1 = image1[event_nr]
     pltimage2 = image2[event_nr]
@@ -251,20 +265,45 @@ def plot_image_2by2(image1,image2,image3,image4,event_nr,labels):
 
     fig, ax = plt.subplots(2,2)
 
-    ax[0,0].imshow(pltimage1[:,:,0], cmap='viridis',vmin=-5)
-    ax[0,1].imshow(pltimage2[:,:,0], cmap='viridis',vmin=-5)
-    ax[1,0].imshow(pltimage3[:,:,0], cmap='viridis',vmin=-5)
-    ax[1,1].imshow(pltimage4[:,:,0], cmap='viridis',vmin=-5)
+    im1 = ax[0,0].imshow(pltimage1[:,:,0], cmap='viridis',vmin=0)
+    im2 = ax[0,1].imshow(pltimage2[:,:,0], cmap='viridis',vmin=0)
+    im3 = ax[1,0].imshow(pltimage3[:,:,0], cmap='viridis',vmin=0)
+    im4 = ax[1,1].imshow(pltimage4[:,:,0], cmap='viridis',vmin=0)
+
+    cbar1 = fig.colorbar(im1, ax=ax[0, 0], orientation='vertical')
+    cbar2 = fig.colorbar(im2, ax=ax[0, 1], orientation='vertical')
+    cbar3 = fig.colorbar(im3, ax=ax[1, 0], orientation='vertical')
+    cbar4 = fig.colorbar(im4, ax=ax[1, 1], orientation='vertical')
+
 
     label1 = labels[event_nr].ravel()[0]
+    label2 = labels[event_nr].ravel()[1]
+    label3 = labels[event_nr].ravel()[2]
+    label4 = labels[event_nr].ravel()[3]
 
     str_label1 = '{}'.format(label1)
+    str_label2 = '{}'.format(label2)
+    str_label3 = '{}'.format(label3)
+    str_label4 = '{}'.format(label4)
 
     ax[0, 0].text(0.05, 0.95, str_label1, transform=ax[0, 0].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
+    ax[0, 1].text(0.05, 0.95, str_label2, transform=ax[0, 1].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
+    ax[1, 0].text(0.05, 0.95, str_label3, transform=ax[1, 0].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
+    ax[1, 1].text(0.05, 0.95, str_label4, transform=ax[1, 1].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
     #plt.show()
+
+    print("Min. and Max. Value for Image 1: ", np.min(pltimage1), " - " , np.max(pltimage1))
+    print("Min. and Max. Value for Image 2: ", np.min(pltimage2), " - " , np.max(pltimage2))
+    print("Min. and Max. Value for Image 3: ", np.min(pltimage3), " - " , np.max(pltimage3))
+    print("Min. and Max. Value for Image 4: ", np.min(pltimage4), " - " , np.max(pltimage4))
+
+
     str_evnr = '{}'.format(event_nr)
-    name = "Test_figure_evnr_" + str_evnr + ".png"
+    name = "Test_images/Test_figure_evnr_" + str_evnr + "_" + string + "_" + formatted_datetime + ".png"
     fig.savefig(name)
+
+print("Functions Defined.")
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-e", "--epochs", type=int)
@@ -279,9 +318,9 @@ rate = args.rate
 reg = args.regulization
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
-fnr = "_2023-07-25_newSet" 
+fnr = "_2023-08-15_newSim" 
 num_events = 100000
-
+amount = int(num_events * 1.2)
 #filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
 #filePath_gamma = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
 filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
@@ -293,10 +332,13 @@ filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT
 dm_gamma = DataManager(filePath_gamma)
 f_g = dm_gamma.get_h5_file()
 
-tel1g_raw = f_g["dl1/event/telescope/images/tel_001"][:]
-tel2g_raw = f_g["dl1/event/telescope/images/tel_002"][:]
-tel3g_raw = f_g["dl1/event/telescope/images/tel_003"][:]
-tel4g_raw = f_g["dl1/event/telescope/images/tel_004"][:]
+
+if amount >= len(f_g["dl1/event/telescope/images/tel_001"][:]) : amount = len(f_g["dl1/event/telescope/images/tel_001"][:]) - 1
+
+tel1g_raw = f_g["dl1/event/telescope/images/tel_001"][0:amount]
+tel2g_raw = f_g["dl1/event/telescope/images/tel_002"][0:amount]
+tel3g_raw = f_g["dl1/event/telescope/images/tel_003"][0:amount]
+tel4g_raw = f_g["dl1/event/telescope/images/tel_004"][0:amount]
 
 print("Successfully opened gamma data!")
 
@@ -308,10 +350,10 @@ f_g.close()
 dm_proton = DataManager(filePath_proton)
 f_p = dm_proton.get_h5_file()
 
-tel1p_raw = f_p["dl1/event/telescope/images/tel_001"][:]
-tel2p_raw = f_p["dl1/event/telescope/images/tel_002"][:]
-tel3p_raw = f_p["dl1/event/telescope/images/tel_003"][:]
-tel4p_raw = f_p["dl1/event/telescope/images/tel_004"][:]
+tel1p_raw = f_p["dl1/event/telescope/images/tel_001"][0:amount]
+tel2p_raw = f_p["dl1/event/telescope/images/tel_002"][0:amount]
+tel3p_raw = f_p["dl1/event/telescope/images/tel_003"][0:amount]
+tel4p_raw = f_p["dl1/event/telescope/images/tel_004"][0:amount]
 
 print("Successfully opened proton data!")
 
@@ -363,6 +405,33 @@ max_value = len(tel1)
 random_list = np.random.randint(max_value, size=length)
 image_nr = 0
 
+print(random_list[0:10])
+
+
+threshold_value = 0.0001  # Adjust this threshold value as needed
+
+print("Start Mapping...")
+for event_nr in random_list:
+    image_1 = ct_14_mapper.map_image(tel1[event_nr][3][:, np.newaxis], 'HESS-I')
+    image_2 = ct_14_mapper.map_image(tel2[event_nr][3][:, np.newaxis], 'HESS-I')
+    image_3 = ct_14_mapper.map_image(tel3[event_nr][3][:, np.newaxis], 'HESS-I')   
+    image_4 = ct_14_mapper.map_image(tel4[event_nr][3][:, np.newaxis], 'HESS-I')
+    
+    # Set all pixels lower than the threshold value to zero
+    image_1[image_1 < threshold_value] = 0
+    image_2[image_2 < threshold_value] = 0
+    image_3[image_3 < threshold_value] = 0
+    image_4[image_4 < threshold_value] = 0
+
+    mapped_images_1[image_nr] = image_1
+    mapped_images_2[image_nr] = image_2
+    mapped_images_3[image_nr] = image_3
+    mapped_images_4[image_nr] = image_4
+    mapped_labels[image_nr] = labels[event_nr]
+    image_nr += 1
+print("... Finished Mapping")
+
+'''
 print("Start Mapping...")
 for event_nr in random_list:
     mapped_images_1[image_nr] = ct_14_mapper.map_image(tel1[event_nr][3][:, np.newaxis], 'HESS-I')
@@ -372,6 +441,10 @@ for event_nr in random_list:
     mapped_labels[image_nr] = labels[event_nr]
     image_nr=image_nr+1
 print("... Finished Mapping")
+'''
+#########################################   MAYBE TRY CONVERTING ALL "EMPTY" IMAGES IN SUCH A WAY
+#########################################   THAT ALL PIXELS BECOME ZERO? IF SUM < 0 -> ALL_PIXELS=0
+#########################################   
 
 
 mapped_images = np.array([mapped_images_1,mapped_images_2,mapped_images_3,mapped_images_4])
@@ -402,10 +475,10 @@ print("New shape of mapped_labels: ",np.shape(mapped_labels))
 # START WITH CNN STUFF
 
 
-patience = 4
+patience = 5
 input_shape = (41, 41, 1)
 pool_size = 2
-kernel_size = 4
+kernel_size = 2
 
 # some reshaping for the further use of the timing data in the CNN
 mapped_images = mapped_images.reshape((*np.shape(mapped_images),1))
@@ -416,12 +489,25 @@ print("Shape of 'event_labels': ",np.shape(mapped_labels))
 print("Shape of 'peak_times': ",np.shape(mapped_images),"\n")
 
 # split into random training data (80%) and test data (20%)
-train_data, test_data, train_labels, test_labels = [], [], [], []
+train_data = []
+test_data = []
+train_labels = []
+test_labels = [] 
+
+#data_dummy = mapped_images
+
 random_selection = np.random.rand(np.shape(mapped_images)[0]) <= 0.8
+
+
 train_data.append(mapped_images[random_selection])
 test_data.append(mapped_images[~random_selection])
 train_labels.append(mapped_labels[random_selection])
 test_labels.append(mapped_labels[~random_selection])
+
+#mapped_images = data_dummy
+#del data_dummy
+
+print(random_selection[0:10])
 
 # free some memory space
 del mapped_images
@@ -485,28 +571,42 @@ print("Test data 1 shape:", np.shape(test_data_1))
 print("Test labels 1 shape:", np.shape(test_labels_1))
 
 
-#plot_image_2by2(train_data,4,train_labels_multishape)
-#plot_image_2by2(train_data,40,train_labels_multishape)
-#plot_image_2by2(train_data,400,train_labels_multishape)
-#plot_image_2by2(train_data,4000,train_labels_multishape)
+
+plot_image_2by2(train_data,4,train_labels_multishape,string="train")
+plot_image_2by2(train_data,40,train_labels_multishape,string="train")
+plot_image_2by2(train_data,400,train_labels_multishape,string="train")
+#plot_image_2by2(train_data,4000,train_labels_multishape,string="train")
+
+plot_image_2by2(test_data,4,test_labels_multishape,string="test")
+plot_image_2by2(test_data,40,test_labels_multishape,string="test")
+plot_image_2by2(test_data,400,test_labels_multishape,string="test")
+#plot_image_2by2(test_data,4000,test_labels_multishape,string="test")
 
 #Define the model for the single-view CNNs
 def create_cnn_model(input_shape):
     model = Sequential()
 
-    model.add(Conv2D(filters=40, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,))
+    model.add(Conv2D(filters=200, kernel_size=kernel_size, padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,))
+    #model.add(LeakyReLU(alpha=0.1)) 
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
     #print("Before first Dropout")
 
     model.add(Dropout(rate))
-    model.add(Conv2D(filters=50, kernel_size=kernel_size, activation='relu', padding='same', kernel_regularizer=regularizers.l2(reg)))
+    model.add(Conv2D(filters=100, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg)))
+    #model.add(LeakyReLU(alpha=0.1)) 
+    model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
+
+    model.add(Dropout(rate))
+    model.add(Conv2D(filters=50, kernel_size=kernel_size, padding='same', kernel_regularizer=regularizers.l2(reg)))
+    #model.add(LeakyReLU(alpha=0.1)) 
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
     #print("After first Dropout")
 
     model.add(Dropout(rate))
-    model.add(Conv2D(filters=60, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg)))
+    model.add(Conv2D(filters=60, kernel_size=kernel_size, padding='same',kernel_regularizer=regularizers.l2(reg)))
+    #model.add(LeakyReLU(alpha=0.1)) 
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
     #print("After second Dropout")
@@ -525,14 +625,13 @@ def create_cnn_model(input_shape):
     return model
 
 # Define the model for the combination of the previous CNNs and the final CNN for classification
-input_shape = (41, 41, 1)
 
 def run_multiview_model(models,inputs):
 
     merged = concatenate(models)
 
     Dropout1 = Dropout(rate)(merged)
-    Conv_merged1 = Conv2D(filters=40,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout1)
+    Conv_merged1 = Conv2D(filters=100,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout1)
     MaxPool_merged1 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged1)
 
     Dropout2 = Dropout(rate)(MaxPool_merged1)
@@ -551,10 +650,7 @@ def run_multiview_model(models,inputs):
     Dropout4 = Dropout(rate)(Flat_merged1)
     dense_layer_merged1 = Dense(units=100, activation='relu')(Dropout4)
 
-    Dropout5 = Dropout(rate)(dense_layer_merged1)
-    dense_layer_merged2 = Dense(units=50, activation='relu')(Dropout5)
-
-    Dropout6 = Dropout(rate)(dense_layer_merged2)
+    Dropout6 = Dropout(rate)(dense_layer_merged1)
     dense_layer_merged3 = Dense(units=1, activation='sigmoid')(Dropout6)
 
     model = Model(inputs=inputs, outputs=dense_layer_merged3)
@@ -578,32 +674,57 @@ cnn_model_4 = create_cnn_model(input_shape)(input_4)
 
 model_multi = run_multiview_model([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4])
 model_multi.summary()
-model_multi.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy']) 
+#model_multi.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'],from_logits=True) 
+from keras.losses import BinaryCrossentropy
 
+# Create the loss function with from_logits=True
+loss_fn = BinaryCrossentropy(from_logits=True)
 
-global training_generator
-global testing_generator
+# Compile the model using the created loss function
+model_multi.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 
-training_generator = MyGenerator(train_data_1,train_data_2,train_data_3,train_data_4,train_labels,batch_size=batch_size)
-testing_generator = MyGenerator(test_data_1,test_data_2,test_data_3,test_data_4,test_labels,batch_size=batch_size)
+#global training_generator
+#global testing_generator
+
+#training_generator = MyGenerator(train_data_1,train_data_2,train_data_3,train_data_4,train_labels,batch_size=batch_size)
+#testing_generator = MyGenerator(test_data_1,test_data_2,test_data_3,test_data_4,test_labels,batch_size=batch_size)
+
+#training_generator = MyGenerator(train_data_1,train_data_2,train_data_3,train_data_4,train_labels,batch_size=batch_size)
+#testing_generator = MyGenerator(test_data_1,test_data_2,test_data_3,test_data_4,test_labels,batch_size=batch_size)
 
 # Generate data and plot the first batch
-batch_index = 0  
-training_generator.plot_batch(batch_index)
+#batch_index = 0  
+#training_generator.plot_batch(batch_index)
 
-testing_generator.reset_counters()
-testing_generator.reset_counters()
+#testing_generator.reset_counters()
+#testing_generator.reset_counters()
 early_stopping_callback_1=tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=patience,verbose=1,mode='min')
 
 print("Starting the Fitting ...")
-history = model_multi.fit(training_generator, epochs=num_epochs, batch_size= batch_size,validation_data=testing_generator, callbacks=[early_stopping_callback_1])
 
+'''
+history = model_multi.fit(
+    x=([training_generator.images_1, training_generator.images_2, training_generator.images_3, training_generator.images_4], training_generator.labels),
+    epochs=num_epochs,
+    batch_size=batch_size,
+    validation_data=(
+        [testing_generator.images_1, testing_generator.images_2, testing_generator.images_3, testing_generator.images_4],
+        testing_generator.labels
+    ),
+    callbacks=[early_stopping_callback_1]
+)
+'''
+#history = model_multi.fit(training_generator, epochs=num_epochs, batch_size= batch_size,validation_data=testing_generator, callbacks=[early_stopping_callback_1])
+history = model_multi.fit([train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping_callback_1])
 str_batch_size = '{}'.format(batch_size)
 str_rate = '{}'.format(rate*100)
 str_reg = '{}'.format(reg)
 str_num_epochs = '{}'.format(num_epochs)
 
-history_name = "history_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + str_reg + "reg" + fnr + ".pkl"
+current_datetime = datetime.now()
+formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M")
+
+history_name = "history_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + str_reg + "reg" + fnr + "_" + formatted_datetime + ".pkl"
 print("... Finished the Fitting")
 
 # Save the history files for later usage in other scripts
@@ -627,7 +748,7 @@ ax[1].set_xlabel('Epoch')
 print("Image created")
 
 
-filename_savefig = "Test_Cluster_"+ str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + fnr +".png"
+filename_savefig = "Test_Cluster_"+ str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" +  "_" + formatted_datetime + ".png"
 fig.savefig(filename_savefig, bbox_inches='tight')
 
 print("Image saved")

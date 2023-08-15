@@ -16,9 +16,26 @@ module load tensorrt/8.5.3.1-cuda11.8-cudnn8.6
 
 micromamba activate dl1dh
 
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 256 -r 0.25 -reg 0.0001
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 256 -r 0.25 -reg 0.00025
 srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 256 -r 0.25 -reg 0.0005
 srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 256 -r 0.25 -reg 0.001
 srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 256 -r 0.25 -reg 0.002
 
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 256 -r 0.2 -reg 0.0001
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 256 -r 0.2 -reg 0.00025
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 256 -r 0.2 -reg 0.0005
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 256 -r 0.2 -reg 0.001
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 256 -r 0.2 -reg 0.002
 
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 64 -r 0.25 -reg 0.0001
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 64 -r 0.25 -reg 0.00025
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 64 -r 0.25 -reg 0.0005
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 64 -r 0.25 -reg 0.001
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 64 -r 0.25 -reg 0.002
 
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 64 -r 0.2 -reg 0.0001
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 64 -r 0.2 -reg 0.00025
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 64 -r 0.2 -reg 0.0005
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 64 -r 0.2 -reg 0.001
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Alex_new.py -e 50 -b 64 -r 0.2 -reg 0.002
