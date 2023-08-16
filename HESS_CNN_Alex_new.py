@@ -244,12 +244,11 @@ def rotate(pix_pos, rotation_angle=0):
     pixel_positions = np.squeeze(np.asarray(np.dot(rotation_matrix, pix_pos)))
     return pixel_positions
 
-def plot_image_2by2(train_data,event_nr,labels,string):
+def plot_image_2by2(train_data,event_nr,labels,string,dt):
 
     
 
-    current_datetime = datetime.now()
-    formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M")
+    
 
     print("Plotting Example Event. Event Nr: ", event_nr)
 
@@ -292,14 +291,14 @@ def plot_image_2by2(train_data,event_nr,labels,string):
     ax[1, 1].text(0.05, 0.95, str_label4, transform=ax[1, 1].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
     #plt.show()
 
-    print("Min. and Max. Value for Image 1: ", np.min(pltimage1), " - " , np.max(pltimage1))
-    print("Min. and Max. Value for Image 2: ", np.min(pltimage2), " - " , np.max(pltimage2))
-    print("Min. and Max. Value for Image 3: ", np.min(pltimage3), " - " , np.max(pltimage3))
-    print("Min. and Max. Value for Image 4: ", np.min(pltimage4), " - " , np.max(pltimage4))
+    print("Min. and Max. Value for Image 1: ", np.min(pltimage1), " - " , np.max(pltimage1) , ". Sum: ", np.sum(pltimage1))
+    print("Min. and Max. Value for Image 2: ", np.min(pltimage2), " - " , np.max(pltimage2), ". Sum: ", np.sum(pltimage2))
+    print("Min. and Max. Value for Image 3: ", np.min(pltimage3), " - " , np.max(pltimage3), ". Sum: ", np.sum(pltimage3))
+    print("Min. and Max. Value for Image 4: ", np.min(pltimage4), " - " , np.max(pltimage4), ". Sum: ", np.sum(pltimage4))
 
 
     str_evnr = '{}'.format(event_nr)
-    name = "Test_images/Test_figure_evnr_" + str_evnr + "_" + string + "_" + formatted_datetime + ".png"
+    name = "Test_images/Test_figure_evnr_" + str_evnr + "_" + string + "_" + dt + ".png"
     fig.savefig(name)
 
 print("Functions Defined.")
@@ -310,17 +309,28 @@ parser.add_argument("-e", "--epochs", type=int)
 parser.add_argument("-b", "--batch_size", type=int)
 parser.add_argument("-r", "--rate", type=float)
 parser.add_argument("-reg", "--regulization", type=float)
+parser.add_argument("-t", "--threshold", type=float)
+parser.add_argument("-c", "--cut", type=int)
+parser.add_argument("-ne", "--numevents", type=int)
 
 args = parser.parse_args()
 num_epochs = args.epochs
 batch_size = args.batch_size
 rate = args.rate
 reg = args.regulization
+sum_threshold = args.threshold
+cut_nonzero = args.cut
+num_events = args.numevents
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
-fnr = "_2023-08-15_newSim" 
-num_events = 100000
-amount = int(num_events * 1.2)
+fnr = "leakyReLU_selectionCuts" 
+
+current_datetime = datetime.now()
+formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M")
+print("Date-Time: ", formatted_datetime)
+
+#num_events = 100000
+amount = int(num_events * 2)
 #filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
 #filePath_gamma = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
 filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
@@ -332,13 +342,14 @@ filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT
 dm_gamma = DataManager(filePath_gamma)
 f_g = dm_gamma.get_h5_file()
 
-
+if num_events >= len(f_g["dl1/event/telescope/images/tel_001"][:]) : num_events = len(f_g["dl1/event/telescope/images/tel_001"][:]) - 2
 if amount >= len(f_g["dl1/event/telescope/images/tel_001"][:]) : amount = len(f_g["dl1/event/telescope/images/tel_001"][:]) - 1
 
 tel1g_raw = f_g["dl1/event/telescope/images/tel_001"][0:amount]
 tel2g_raw = f_g["dl1/event/telescope/images/tel_002"][0:amount]
 tel3g_raw = f_g["dl1/event/telescope/images/tel_003"][0:amount]
 tel4g_raw = f_g["dl1/event/telescope/images/tel_004"][0:amount]
+#tel5g_raw = f_g["dl1/event/telescope/images/tel_005"][0:amount]
 
 print("Successfully opened gamma data!")
 
@@ -354,6 +365,7 @@ tel1p_raw = f_p["dl1/event/telescope/images/tel_001"][0:amount]
 tel2p_raw = f_p["dl1/event/telescope/images/tel_002"][0:amount]
 tel3p_raw = f_p["dl1/event/telescope/images/tel_003"][0:amount]
 tel4p_raw = f_p["dl1/event/telescope/images/tel_004"][0:amount]
+#tel5p_raw = f_p["dl1/event/telescope/images/tel_005"][0:amount]
 
 print("Successfully opened proton data!")
 
@@ -364,6 +376,7 @@ tel1 = np.concatenate((tel1g_raw,tel1p_raw),axis=0)
 tel2 = np.concatenate((tel2g_raw,tel2p_raw),axis=0)
 tel3 = np.concatenate((tel3g_raw,tel3p_raw),axis=0)
 tel4 = np.concatenate((tel4g_raw,tel4p_raw),axis=0)
+#tel5 = np.concatenate((tel5g_raw,tel5p_raw),axis=0)
 labels = np.concatenate((labelsg_ones,labelsp_zeros),axis=0)
 
 del tel1g_raw
@@ -387,17 +400,20 @@ print("Shape of Tel1: ",np.shape(tel1))
 print("Shape of Tel2: ",np.shape(tel2))
 print("Shape of Tel3: ",np.shape(tel3))
 print("Shape of Tel4: ",np.shape(tel4))
+#print("Shape of Tel5: ",np.shape(tel5))
 print("Shape of Labels: ",np.shape(labels))
 print("Labels: ",labels)
 
 geo_ct14, geo_ct5 = make_hess_geometry()
 print(os.getcwd())
 ct_14_mapper = ImageMapper(camera_types=["HESS-I"], pixel_positions={"HESS-I": rotate(geo_ct14.get_pix_pos())}, mapping_method={"HESS-I": "axial_addressing"})
+#ct_5_mapper = ImageMapper(camera_types=["HESS-II"], pixel_positions={"HESS-II": rotate(geo_ct5.get_pix_pos())}, mapping_method={"HESS-II": "axial_addressing"})
 
 mapped_images_1 = np.empty((num_events, 41,41,1))
 mapped_images_2 = np.empty((num_events, 41,41,1))
 mapped_images_3 = np.empty((num_events, 41,41,1))
 mapped_images_4 = np.empty((num_events, 41,41,1))
+#mapped_images_4 = np.empty((num_events, 41,41,1))
 mapped_labels = np.empty(num_events)
 
 length = num_events
@@ -412,23 +428,45 @@ threshold_value = 0.0001  # Adjust this threshold value as needed
 
 print("Start Mapping...")
 for event_nr in random_list:
+
+
+    
     image_1 = ct_14_mapper.map_image(tel1[event_nr][3][:, np.newaxis], 'HESS-I')
     image_2 = ct_14_mapper.map_image(tel2[event_nr][3][:, np.newaxis], 'HESS-I')
     image_3 = ct_14_mapper.map_image(tel3[event_nr][3][:, np.newaxis], 'HESS-I')   
     image_4 = ct_14_mapper.map_image(tel4[event_nr][3][:, np.newaxis], 'HESS-I')
-    
+    #image_5 = ct_5_mapper.map_image(tel5[event_nr][3][:, np.newaxis], 'HESS-II')   
+
+    # Apply threshold on the sum of pixel values
+    #sum_threshold = 60  # Adjust this value to your desired threshold
+    sum_threshold = args.threshold
+
+    if np.sum(image_1) < sum_threshold:
+        image_1[:] = 0
+    if np.sum(image_2) < sum_threshold:
+        image_2[:] = 0
+    if np.sum(image_3) < sum_threshold:
+        image_3[:] = 0
+    if np.sum(image_4) < sum_threshold:
+        image_4[:] = 0
+     
     # Set all pixels lower than the threshold value to zero
     image_1[image_1 < threshold_value] = 0
     image_2[image_2 < threshold_value] = 0
     image_3[image_3 < threshold_value] = 0
     image_4[image_4 < threshold_value] = 0
+    #image_5[image_5 < threshold_value] = 0
 
-    mapped_images_1[image_nr] = image_1
-    mapped_images_2[image_nr] = image_2
-    mapped_images_3[image_nr] = image_3
-    mapped_images_4[image_nr] = image_4
-    mapped_labels[image_nr] = labels[event_nr]
-    image_nr += 1
+    non_zero_count = sum(1 for img in [image_1, image_2, image_3, image_4] if np.sum(img) > 0)
+    if non_zero_count >= cut_nonzero:
+        mapped_images_1[image_nr] = image_1
+        mapped_images_2[image_nr] = image_2
+        mapped_images_3[image_nr] = image_3
+        mapped_images_4[image_nr] = image_4
+        #mapped_images_5[image_nr] = image_5
+        mapped_labels[image_nr] = labels[event_nr]
+        image_nr += 1
+    
 print("... Finished Mapping")
 
 '''
@@ -447,7 +485,7 @@ print("... Finished Mapping")
 #########################################   
 
 
-mapped_images = np.array([mapped_images_1,mapped_images_2,mapped_images_3,mapped_images_4])
+mapped_images = np.array([mapped_images_1,mapped_images_2,mapped_images_3,mapped_images_4]) #mapped_images_5])
 print("Shape of mapped_images_1: ",np.shape(mapped_images_1))
 print("Shape of mapped_images: ",np.shape(mapped_images))
 
@@ -477,6 +515,7 @@ print("New shape of mapped_labels: ",np.shape(mapped_labels))
 
 patience = 5
 input_shape = (41, 41, 1)
+#input_shape5 = (72,72,1)
 pool_size = 2
 kernel_size = 2
 
@@ -548,21 +587,25 @@ train_data_1 = train_data[:,0,:,:]
 train_data_2 = train_data[:,1,:,:] 
 train_data_3 = train_data[:,2,:,:] 
 train_data_4 = train_data[:,3,:,:] 
+#train_data_5 = train_data[:,4,:,:] 
 
 test_data_1 = test_data[:,0,:,:]
 test_data_2 = test_data[:,1,:,:]
 test_data_3 = test_data[:,2,:,:]
 test_data_4 = test_data[:,3,:,:]
+#test_data_5 = test_data[:,4,:,:]
 
 train_labels_1 = train_labels_multishape[:,0,:,:]
 train_labels_2 = train_labels_multishape[:,1,:,:]
 train_labels_3 = train_labels_multishape[:,2,:,:]
 train_labels_4 = train_labels_multishape[:,3,:,:]
+#train_labels_5 = train_labels_multishape[:,4,:,:]
 
 test_labels_1 = test_labels_multishape[:,0,:,:]
 test_labels_2 = test_labels_multishape[:,1,:,:]
 test_labels_3 = test_labels_multishape[:,2,:,:]
 test_labels_4 = test_labels_multishape[:,3,:,:]
+#test_labels_5 = test_labels_multishape[:,4,:,:]
 
 print("Train data 1 shape:", np.shape(train_data_1))
 print("Train labels 1 shape:", np.shape(train_labels_1))
@@ -572,41 +615,41 @@ print("Test labels 1 shape:", np.shape(test_labels_1))
 
 
 
-plot_image_2by2(train_data,4,train_labels_multishape,string="train")
-plot_image_2by2(train_data,40,train_labels_multishape,string="train")
-plot_image_2by2(train_data,400,train_labels_multishape,string="train")
-#plot_image_2by2(train_data,4000,train_labels_multishape,string="train")
+plot_image_2by2(train_data,4,train_labels_multishape,string="train",dt=formatted_datetime)
+plot_image_2by2(train_data,40,train_labels_multishape,string="train",dt=formatted_datetime)
+plot_image_2by2(train_data,400,train_labels_multishape,string="train",dt=formatted_datetime)
+#plot_image_2by2(train_data,4000,train_labels_multishape,string="train",dt=formatted_datetime)
 
-plot_image_2by2(test_data,4,test_labels_multishape,string="test")
-plot_image_2by2(test_data,40,test_labels_multishape,string="test")
-plot_image_2by2(test_data,400,test_labels_multishape,string="test")
-#plot_image_2by2(test_data,4000,test_labels_multishape,string="test")
+plot_image_2by2(test_data,4,test_labels_multishape,string="test",dt=formatted_datetime)
+plot_image_2by2(test_data,40,test_labels_multishape,string="test",dt=formatted_datetime)
+plot_image_2by2(test_data,400,test_labels_multishape,string="test",dt=formatted_datetime)
+#plot_image_2by2(test_data,4000,test_labels_multishape,string="test",dt=formatted_datetime)
 
 #Define the model for the single-view CNNs
 def create_cnn_model(input_shape):
     model = Sequential()
 
     model.add(Conv2D(filters=200, kernel_size=kernel_size, padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,))
-    #model.add(LeakyReLU(alpha=0.1)) 
+    model.add(LeakyReLU(alpha=0.1)) 
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
     #print("Before first Dropout")
 
     model.add(Dropout(rate))
     model.add(Conv2D(filters=100, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg)))
-    #model.add(LeakyReLU(alpha=0.1)) 
+    model.add(LeakyReLU(alpha=0.1)) 
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
     model.add(Dropout(rate))
     model.add(Conv2D(filters=50, kernel_size=kernel_size, padding='same', kernel_regularizer=regularizers.l2(reg)))
-    #model.add(LeakyReLU(alpha=0.1)) 
+    model.add(LeakyReLU(alpha=0.1)) 
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
     #print("After first Dropout")
 
     model.add(Dropout(rate))
     model.add(Conv2D(filters=60, kernel_size=kernel_size, padding='same',kernel_regularizer=regularizers.l2(reg)))
-    #model.add(LeakyReLU(alpha=0.1)) 
+    model.add(LeakyReLU(alpha=0.1)) 
     model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
 
     #print("After second Dropout")
@@ -669,6 +712,8 @@ cnn_model_3 = create_cnn_model(input_shape)(input_3)
 input_4 = Input(shape=input_shape)
 cnn_model_4 = create_cnn_model(input_shape)(input_4)
 
+
+
 # include early_stopping here, to see how it changes compared to previous model designs
 #early_stopping = EarlyStopping(monitor='val_loss', patience=patience)
 
@@ -720,11 +765,12 @@ str_batch_size = '{}'.format(batch_size)
 str_rate = '{}'.format(rate*100)
 str_reg = '{}'.format(reg)
 str_num_epochs = '{}'.format(num_epochs)
+str_thr = '{}'.format(sum_threshold)
+str_cnz = '{}'.format(cut_nonzero)
 
-current_datetime = datetime.now()
-formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M")
+name_str = fnr + "_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + str_reg + "reg" + str_thr + "threshold" + str_cnz + "nonzerocut" + "_" + formatted_datetime 
 
-history_name = "history_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + str_reg + "reg" + fnr + "_" + formatted_datetime + ".pkl"
+history_name = "HistoryFiles/history_" + name_str + ".pkl"
 print("... Finished the Fitting")
 
 # Save the history files for later usage in other scripts
@@ -748,7 +794,7 @@ ax[1].set_xlabel('Epoch')
 print("Image created")
 
 
-filename_savefig = "Test_Cluster_"+ str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" +  "_" + formatted_datetime + ".png"
+filename_savefig = "Images/Test_Cluster_" + name_str + ".png"
 fig.savefig(filename_savefig, bbox_inches='tight')
 
 print("Image saved")
