@@ -379,7 +379,7 @@ cut_nonzero = args.cut
 num_events = args.numevents
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
-fnr = "ResNet50_cpp" 
+fnr = "ResNet50_pp" 
 
 current_datetime = datetime.now()
 formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M")
@@ -570,7 +570,7 @@ print("New shape of mapped_labels: ",np.shape(mapped_labels))
 
 
 patience = 5
-input_shape = (41, 41, 1)
+input_shape = (41, 41, 3)
 #input_shape5 = (72,72,1)
 pool_size = 2
 kernel_size = 2
@@ -699,10 +699,10 @@ def create_cnn_model(input_shape):
     input_layer = Input(shape=input_shape)
     #x = Conv2D(3, (1, 1))(input_layer)
     #preprocessed_input = preprocess_input(x)
-    Seq_model = Sequential()(input_layer) 
-    #ResNet50_model = ResNet50(include_top=False, weights=None, input_tensor=input_layer)
+    #Seq_model = Sequential 
+    ResNet50_model = ResNet50(include_top=False, weights=None, input_tensor=input_layer)
 
-    Conv1 = Conv2D(filters=200, kernel_size=kernel_size, padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,)(Seq_model)
+    Conv1 = Conv2D(filters=200, kernel_size=kernel_size, padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,)(ResNet50_model.output)
     LeakyRelu1 = LeakyReLU(alpha=0.1)(Conv1)
     MaxPool1 = MaxPooling2D(pool_size=pool_size, padding='same')(LeakyRelu1)
 
@@ -812,11 +812,11 @@ def custom_preprocess_input(data):
             normalized_data[event] = data[event]/max_value     
     return normalized_data
 
-cpp_train_data = custom_preprocess_input(train_data)
-cpp_test_data = custom_preprocess_input(test_data)
+#cpp_train_data = custom_preprocess_input(train_data)
+#cpp_test_data = custom_preprocess_input(test_data)
 
-#pp_train_data = preprocess_input_resnet(train_data)
-#pp_test_data = preprocess_input_resnet(test_data)
+pp_train_data = preprocess_input_resnet(train_data)
+pp_test_data = preprocess_input_resnet(test_data)
 
 '''
 cpp_test_data_1 = custom_preprocess_input(test_data_1)
@@ -857,8 +857,8 @@ pp_train_data[:,3,:,:]=pp_train_data_4
 #plot_image_2by2_v2(cpp_train_data_1,cpp_train_data_2,cpp_train_data_3,cpp_train_data_4,4,train_labels_multishape,string="cpptrain",dt=formatted_datetime)
 #plot_image_2by2_v2(pp_train_data_1,pp_train_data_2,pp_train_data_3,pp_train_data_4,4,train_labels_multishape,string="pptrain",dt=formatted_datetime)
 
-plot_image_2by2(cpp_train_data,4,train_labels_multishape,string="cpptrain",dt=formatted_datetime)
-plot_image_2by2(cpp_test_data,4,test_labels_multishape,string="cpptest",dt=formatted_datetime)
+plot_image_2by2(pp_train_data,4,train_labels_multishape,string="cpptrain",dt=formatted_datetime)
+plot_image_2by2(pp_test_data,4,test_labels_multishape,string="cpptest",dt=formatted_datetime)
 
 #print("Max:",np.max(train_data_1))
 #print("Max_pp:",np.max(pp_train_data_1))
@@ -913,7 +913,7 @@ history = model_multi.fit(
 #history_pp = history = model_multi.fit([pp_train_data_1,pp_train_data_2,pp_train_data_3,pp_train_data_4],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([pp_test_data_1,pp_test_data_2,pp_test_data_3,pp_test_data_4], test_labels), callbacks=[early_stopping_callback_1])
 
 
-history = model_multi.fit([cpp_train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([cpp_test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping_callback_1])
+history = model_multi.fit([pp_train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([pp_test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping_callback_1])
 str_batch_size = '{}'.format(batch_size)
 str_rate = '{}'.format(rate*100)
 str_reg = '{}'.format(reg)

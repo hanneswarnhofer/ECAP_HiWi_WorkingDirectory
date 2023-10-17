@@ -379,7 +379,7 @@ cut_nonzero = args.cut
 num_events = args.numevents
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
-fnr = "ResNet50_cpp" 
+fnr = "Sequential" 
 
 current_datetime = datetime.now()
 formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M")
@@ -812,8 +812,8 @@ def custom_preprocess_input(data):
             normalized_data[event] = data[event]/max_value     
     return normalized_data
 
-cpp_train_data = custom_preprocess_input(train_data)
-cpp_test_data = custom_preprocess_input(test_data)
+#cpp_train_data = custom_preprocess_input(train_data)
+#cpp_test_data = custom_preprocess_input(test_data)
 
 #pp_train_data = preprocess_input_resnet(train_data)
 #pp_test_data = preprocess_input_resnet(test_data)
@@ -857,8 +857,8 @@ pp_train_data[:,3,:,:]=pp_train_data_4
 #plot_image_2by2_v2(cpp_train_data_1,cpp_train_data_2,cpp_train_data_3,cpp_train_data_4,4,train_labels_multishape,string="cpptrain",dt=formatted_datetime)
 #plot_image_2by2_v2(pp_train_data_1,pp_train_data_2,pp_train_data_3,pp_train_data_4,4,train_labels_multishape,string="pptrain",dt=formatted_datetime)
 
-plot_image_2by2(cpp_train_data,4,train_labels_multishape,string="cpptrain",dt=formatted_datetime)
-plot_image_2by2(cpp_test_data,4,test_labels_multishape,string="cpptest",dt=formatted_datetime)
+plot_image_2by2(train_data,4,train_labels_multishape,string="train",dt=formatted_datetime)
+plot_image_2by2(test_data,4,test_labels_multishape,string="test",dt=formatted_datetime)
 
 #print("Max:",np.max(train_data_1))
 #print("Max_pp:",np.max(pp_train_data_1))
@@ -913,7 +913,7 @@ history = model_multi.fit(
 #history_pp = history = model_multi.fit([pp_train_data_1,pp_train_data_2,pp_train_data_3,pp_train_data_4],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([pp_test_data_1,pp_test_data_2,pp_test_data_3,pp_test_data_4], test_labels), callbacks=[early_stopping_callback_1])
 
 
-history = model_multi.fit([cpp_train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([cpp_test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping_callback_1])
+history = model_multi.fit([train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping_callback_1])
 str_batch_size = '{}'.format(batch_size)
 str_rate = '{}'.format(rate*100)
 str_reg = '{}'.format(reg)

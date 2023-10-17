@@ -304,59 +304,6 @@ def plot_image_2by2(train_data,event_nr,labels,string,dt):
     name = "Test_images/Test_figure_evnr_" + str_evnr + "_" + string + "_" + dt + ".png"
     fig.savefig(name)
 
-def plot_image_2by2_v2(image1,image2,image3,image4,event_nr,labels,string,dt):
-
-    
-
-    
-
-    print("Plotting Example Event. Event Nr: ", event_nr)
-
-
-    pltimage1 = image1[event_nr]
-    pltimage2 = image2[event_nr]
-    pltimage3 = image3[event_nr]
-    pltimage4 = image4[event_nr]
-
-    fig, ax = plt.subplots(2,2)
-
-    im1 = ax[0,0].imshow(pltimage1[:,:,0], cmap='viridis',vmin=0)
-    im2 = ax[0,1].imshow(pltimage2[:,:,0], cmap='viridis',vmin=0)
-    im3 = ax[1,0].imshow(pltimage3[:,:,0], cmap='viridis',vmin=0)
-    im4 = ax[1,1].imshow(pltimage4[:,:,0], cmap='viridis',vmin=0)
-
-    cbar1 = fig.colorbar(im1, ax=ax[0, 0], orientation='vertical')
-    cbar2 = fig.colorbar(im2, ax=ax[0, 1], orientation='vertical')
-    cbar3 = fig.colorbar(im3, ax=ax[1, 0], orientation='vertical')
-    cbar4 = fig.colorbar(im4, ax=ax[1, 1], orientation='vertical')
-
-
-    label1 = labels[event_nr].ravel()[0]
-    label2 = labels[event_nr].ravel()[1]
-    label3 = labels[event_nr].ravel()[2]
-    label4 = labels[event_nr].ravel()[3]
-
-    str_label1 = '{}'.format(label1)
-    str_label2 = '{}'.format(label2)
-    str_label3 = '{}'.format(label3)
-    str_label4 = '{}'.format(label4)
-
-    ax[0, 0].text(0.05, 0.95, str_label1, transform=ax[0, 0].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
-    ax[0, 1].text(0.05, 0.95, str_label2, transform=ax[0, 1].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
-    ax[1, 0].text(0.05, 0.95, str_label3, transform=ax[1, 0].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
-    ax[1, 1].text(0.05, 0.95, str_label4, transform=ax[1, 1].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
-    #plt.show()
-
-    print("Min. and Max. Value for Image 1: ", np.min(pltimage1), " - " , np.max(pltimage1) , ". Sum: ", np.sum(pltimage1))
-    print("Min. and Max. Value for Image 2: ", np.min(pltimage2), " - " , np.max(pltimage2), ". Sum: ", np.sum(pltimage2))
-    print("Min. and Max. Value for Image 3: ", np.min(pltimage3), " - " , np.max(pltimage3), ". Sum: ", np.sum(pltimage3))
-    print("Min. and Max. Value for Image 4: ", np.min(pltimage4), " - " , np.max(pltimage4), ". Sum: ", np.sum(pltimage4))
-
-
-    str_evnr = '{}'.format(event_nr)
-    name = "Test_images/Test_figure_evnr_" + str_evnr + "_" + string + "_" + dt + ".png"
-    fig.savefig(name)
-
 print("Functions Defined.")
 
 
@@ -379,7 +326,7 @@ cut_nonzero = args.cut
 num_events = args.numevents
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
-fnr = "ResNet50_cpp" 
+fnr = "ResNet50" 
 
 current_datetime = datetime.now()
 formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M")
@@ -387,13 +334,13 @@ print("Date-Time: ", formatted_datetime)
 
 #num_events = 100000
 amount = int(num_events * 2)
-#filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
+filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
 #filePath_gamma = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
-filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
+#filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
 
-#filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
+filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
 #filePath_proton = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
-filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"
+#filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"
 
 dm_gamma = DataManager(filePath_gamma)
 f_g = dm_gamma.get_h5_file()
@@ -670,16 +617,6 @@ print("Test data 1 shape:", np.shape(test_data_1))
 print("Test labels 1 shape:", np.shape(test_labels_1))
 
 
-'''
-i = tf.keras.layers.Input([None, None, 3], dtype = tf.uint8)
-x = tf.cast(i, tf.float32)
-x = tf.keras.applications.resnet50.preprocess_input(x)
-core = tf.keras.applications.resnet50()
-x = core(x)
-model = tf.keras.Model(inputs=[i], outputs=[x])
-
-train_data_1 = model(train_data_1)
-'''
 
 plot_image_2by2(train_data,4,train_labels_multishape,string="train",dt=formatted_datetime)
 #plot_image_2by2(train_data,40,train_labels_multishape,string="train",dt=formatted_datetime)
@@ -691,18 +628,12 @@ plot_image_2by2(test_data,4,test_labels_multishape,string="test",dt=formatted_da
 #plot_image_2by2(test_data,400,test_labels_multishape,string="test",dt=formatted_datetime)
 #plot_image_2by2(test_data,4000,test_labels_multishape,string="test",dt=formatted_datetime)
 
-
-
-
 #Define the model for the single-view CNNs
 def create_cnn_model(input_shape):
     input_layer = Input(shape=input_shape)
-    #x = Conv2D(3, (1, 1))(input_layer)
-    #preprocessed_input = preprocess_input(x)
-    Seq_model = Sequential()(input_layer) 
-    #ResNet50_model = ResNet50(include_top=False, weights=None, input_tensor=input_layer)
+    ResNet50_model = ResNet50(include_top=False, weights=None, input_tensor=input_layer)
 
-    Conv1 = Conv2D(filters=200, kernel_size=kernel_size, padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,)(Seq_model)
+    Conv1 = Conv2D(filters=200, kernel_size=kernel_size, padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,)(ResNet50_model.output)
     LeakyRelu1 = LeakyReLU(alpha=0.1)(Conv1)
     MaxPool1 = MaxPooling2D(pool_size=pool_size, padding='same')(LeakyRelu1)
 
@@ -773,6 +704,7 @@ def run_multiview_model(models,inputs):
 
 # Create four separate CNN models
 input_1 = Input(shape=input_shape)
+
 cnn_model_1 = create_cnn_model(input_shape)(input_1)
 
 input_2 = Input(shape=input_shape)
@@ -785,83 +717,6 @@ input_4 = Input(shape=input_shape)
 cnn_model_4 = create_cnn_model(input_shape)(input_4)
 
 
-def preprocess_input_resnet(data):
-    # Expand single-channel image to three channels
-    rgb_data = np.repeat(data,3,axis=-1)
-    mean = [103.939, 116.779, 123.68]
-    std = None
-
-    rgb_data[:,:,:,:,0] -= mean[0]
-    rgb_data[:,:,:,:,1] -= mean[1]
-    rgb_data[:,:,:,:,2] -= mean[2]
-    return rgb_data
-
-def custom_preprocess_input(data):
-    normalized_data = np.empty(data.shape)
-    # Perform custom preprocessing (e.g., scaling)
-    #max_values = np.max(data,axis=(2,3,4),keepdims=True)
-    for event in range(data.shape[0]):
-        #max_values = np.max(data,axis=(1,2,3,4))
-        #print(max_values)
-        #normalized_data = np.where(max_values == 0, data, data / max_values[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis])  
-        max_value = np.max(data[event]) 
-        if max_value == 0:
-            normalized_data[event] = data[event]
-        else:
-            data[event][np.isnan(data[event])] = 0
-            normalized_data[event] = data[event]/max_value     
-    return normalized_data
-
-cpp_train_data = custom_preprocess_input(train_data)
-cpp_test_data = custom_preprocess_input(test_data)
-
-#pp_train_data = preprocess_input_resnet(train_data)
-#pp_test_data = preprocess_input_resnet(test_data)
-
-'''
-cpp_test_data_1 = custom_preprocess_input(test_data_1)
-cpp_test_data_2 = custom_preprocess_input(test_data_2)
-cpp_test_data_3 = custom_preprocess_input(test_data_3)
-cpp_test_data_4 = custom_preprocess_input(test_data_4)
-
-cpp_train_data_1 = custom_preprocess_input(train_data_1)
-cpp_train_data_2 = custom_preprocess_input(train_data_2)
-cpp_train_data_3 = custom_preprocess_input(train_data_3)
-cpp_train_data_4 = custom_preprocess_input(train_data_4)
-
-
-#pp_test_data_1 = preprocess_input(convert_to_rgb(test_data_1.reshape(test_data_1.shape[:-1])))
-#pp_test_data_2 = preprocess_input(convert_to_rgb(test_data_2.reshape(test_data_2.shape[:-1])))
-#pp_test_data_3 = preprocess_input(convert_to_rgb(test_data_3.reshape(test_data_3.shape[:-1])))
-#pp_test_data_4 = preprocess_input(convert_to_rgb(test_data_4.reshape(test_data_4.shape[:-1])))
-
-#pp_train_data_1 = preprocess_input(convert_to_rgb(train_data_1.reshape(train_data_1.shape[:-1])))
-#pp_train_data_2 = preprocess_input(convert_to_rgb(train_data_2.reshape(train_data_2.shape[:-1])))
-#pp_train_data_3 = preprocess_input(convert_to_rgb(train_data_3.reshape(train_data_3.shape[:-1])))
-#pp_train_data_4 = preprocess_input(convert_to_rgb(train_data_4.reshape(train_data_4.shape[:-1])))
-'''
-'''
-cpp_train_data = np.zeros_like(train_data)
-cpp_train_data[:,0,:,:]=cpp_train_data_1
-cpp_train_data[:,1,:,:]=cpp_train_data_2
-cpp_train_data[:,2,:,:]=cpp_train_data_3
-cpp_train_data[:,3,:,:]=cpp_train_data_4
-
-pp_train_data = np.zeros_like(convert_to_rgb(train_data.reshape(train_data.shape[:-1])))
-pp_train_data[:,0,:,:]=pp_train_data_1
-pp_train_data[:,1,:,:]=pp_train_data_2
-pp_train_data[:,2,:,:]=pp_train_data_3
-pp_train_data[:,3,:,:]=pp_train_data_4
-'''
-
-#plot_image_2by2_v2(cpp_train_data_1,cpp_train_data_2,cpp_train_data_3,cpp_train_data_4,4,train_labels_multishape,string="cpptrain",dt=formatted_datetime)
-#plot_image_2by2_v2(pp_train_data_1,pp_train_data_2,pp_train_data_3,pp_train_data_4,4,train_labels_multishape,string="pptrain",dt=formatted_datetime)
-
-plot_image_2by2(cpp_train_data,4,train_labels_multishape,string="cpptrain",dt=formatted_datetime)
-plot_image_2by2(cpp_test_data,4,test_labels_multishape,string="cpptest",dt=formatted_datetime)
-
-#print("Max:",np.max(train_data_1))
-#print("Max_pp:",np.max(pp_train_data_1))
 
 # include early_stopping here, to see how it changes compared to previous model designs
 #early_stopping = EarlyStopping(monitor='val_loss', patience=patience)
@@ -876,6 +731,7 @@ loss_fn = BinaryCrossentropy(from_logits=True)
 
 # Compile the model using the created loss function
 model_multi.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+#model_multi.compile(optimizer=K.optimizers.RMSprop(lr=rate),  metrics=['accuracy'])
 
 #global training_generator
 #global testing_generator
@@ -908,12 +764,17 @@ history = model_multi.fit(
     callbacks=[early_stopping_callback_1]
 )
 '''
+i = tf.keras.layers.Input([None, None, 3], dtype = tf.uint8)
+x = tf.cast(i, tf.float32)
+x = tf.keras.applications.mobilenet.preprocess_input(x)
+core = tf.keras.applications.MobileNet()
+x = core(x)
+model = tf.keras.Model(inputs=[i], outputs=[x])
+
+
+
 #history = model_multi.fit(training_generator, epochs=num_epochs, batch_size= batch_size,validation_data=testing_generator, callbacks=[early_stopping_callback_1])
-#history = model_multi.fit([cpp_train_data_1,cpp_train_data_2,cpp_train_data_3,cpp_train_data_4],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([cpp_test_data_1,cpp_test_data_2,cpp_test_data_3,cpp_test_data_4], test_labels), callbacks=[early_stopping_callback_1])
-#history_pp = history = model_multi.fit([pp_train_data_1,pp_train_data_2,pp_train_data_3,pp_train_data_4],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([pp_test_data_1,pp_test_data_2,pp_test_data_3,pp_test_data_4], test_labels), callbacks=[early_stopping_callback_1])
-
-
-history = model_multi.fit([cpp_train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([cpp_test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping_callback_1])
+history = model_multi.fit([train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping_callback_1])
 str_batch_size = '{}'.format(batch_size)
 str_rate = '{}'.format(rate*100)
 str_reg = '{}'.format(reg)
@@ -923,14 +784,10 @@ str_cnz = '{}'.format(cut_nonzero)
 
 name_str = fnr + "_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + str_reg + "reg" + str_thr + "threshold" + str_cnz + "nonzerocut" + "_" + formatted_datetime 
 
-
-
+history_name = "HistoryFiles/history_" + name_str + ".pkl"
 print("... Finished the Fitting")
 
 # Save the history files for later usage in other scripts
-
-history_name = "HistoryFiles/history_" + name_str + ".pkl"
-
 with open(history_name, 'wb') as file:
     pickle.dump(history.history, file)
 
@@ -955,4 +812,3 @@ filename_savefig = "Images/Test_Cluster_" + name_str + ".png"
 fig.savefig(filename_savefig, bbox_inches='tight')
 
 print("Image saved")
-

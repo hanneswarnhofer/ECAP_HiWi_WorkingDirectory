@@ -33,11 +33,8 @@ from dl1_data_handler.image_mapper import ImageMapper
 
 import tensorflow as tf
 from tensorflow import keras
-from tensorflow.keras.applications.resnet50 import ResNet50
-from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications.resnet50 import preprocess_input, decode_predictions
 from tensorflow.keras import layers, models, callbacks, optimizers, regularizers
-from tensorflow.keras.layers import Input, Concatenate, concatenate, Dense,Embedding, Conv2D, Conv3D, MaxPooling2D, MaxPooling3D, Flatten, Dropout, ConvLSTM2D, BatchNormalization, LeakyReLU
+from tensorflow.keras.layers import Input, Concatenate, concatenate, Dense,Embedding, Conv2D, Conv3D, MaxPooling2D, MaxPooling3D, Flatten, Dropout, ConvLSTM2D, BatchNormalization, LeakyReLU, GlobalAveragePooling2D, GlobalMaxPooling2D
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping
 from tensorflow.keras.models import Model, Sequential
 
@@ -301,60 +298,7 @@ def plot_image_2by2(train_data,event_nr,labels,string,dt):
 
 
     str_evnr = '{}'.format(event_nr)
-    name = "Test_images/Test_figure_evnr_" + str_evnr + "_" + string + "_" + dt + ".png"
-    fig.savefig(name)
-
-def plot_image_2by2_v2(image1,image2,image3,image4,event_nr,labels,string,dt):
-
-    
-
-    
-
-    print("Plotting Example Event. Event Nr: ", event_nr)
-
-
-    pltimage1 = image1[event_nr]
-    pltimage2 = image2[event_nr]
-    pltimage3 = image3[event_nr]
-    pltimage4 = image4[event_nr]
-
-    fig, ax = plt.subplots(2,2)
-
-    im1 = ax[0,0].imshow(pltimage1[:,:,0], cmap='viridis',vmin=0)
-    im2 = ax[0,1].imshow(pltimage2[:,:,0], cmap='viridis',vmin=0)
-    im3 = ax[1,0].imshow(pltimage3[:,:,0], cmap='viridis',vmin=0)
-    im4 = ax[1,1].imshow(pltimage4[:,:,0], cmap='viridis',vmin=0)
-
-    cbar1 = fig.colorbar(im1, ax=ax[0, 0], orientation='vertical')
-    cbar2 = fig.colorbar(im2, ax=ax[0, 1], orientation='vertical')
-    cbar3 = fig.colorbar(im3, ax=ax[1, 0], orientation='vertical')
-    cbar4 = fig.colorbar(im4, ax=ax[1, 1], orientation='vertical')
-
-
-    label1 = labels[event_nr].ravel()[0]
-    label2 = labels[event_nr].ravel()[1]
-    label3 = labels[event_nr].ravel()[2]
-    label4 = labels[event_nr].ravel()[3]
-
-    str_label1 = '{}'.format(label1)
-    str_label2 = '{}'.format(label2)
-    str_label3 = '{}'.format(label3)
-    str_label4 = '{}'.format(label4)
-
-    ax[0, 0].text(0.05, 0.95, str_label1, transform=ax[0, 0].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
-    ax[0, 1].text(0.05, 0.95, str_label2, transform=ax[0, 1].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
-    ax[1, 0].text(0.05, 0.95, str_label3, transform=ax[1, 0].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
-    ax[1, 1].text(0.05, 0.95, str_label4, transform=ax[1, 1].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
-    #plt.show()
-
-    print("Min. and Max. Value for Image 1: ", np.min(pltimage1), " - " , np.max(pltimage1) , ". Sum: ", np.sum(pltimage1))
-    print("Min. and Max. Value for Image 2: ", np.min(pltimage2), " - " , np.max(pltimage2), ". Sum: ", np.sum(pltimage2))
-    print("Min. and Max. Value for Image 3: ", np.min(pltimage3), " - " , np.max(pltimage3), ". Sum: ", np.sum(pltimage3))
-    print("Min. and Max. Value for Image 4: ", np.min(pltimage4), " - " , np.max(pltimage4), ". Sum: ", np.sum(pltimage4))
-
-
-    str_evnr = '{}'.format(event_nr)
-    name = "Test_images/Test_figure_evnr_" + str_evnr + "_" + string + "_" + dt + ".png"
+    name = "../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/Test_images/Test_figure_evnr_" + str_evnr + "_" + string + "_" + dt + ".png"
     fig.savefig(name)
 
 print("Functions Defined.")
@@ -379,7 +323,7 @@ cut_nonzero = args.cut
 num_events = args.numevents
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
-fnr = "ResNet50_cpp" 
+fnr = "leakyReLU_selectionCuts" 
 
 current_datetime = datetime.now()
 formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M")
@@ -387,13 +331,13 @@ print("Date-Time: ", formatted_datetime)
 
 #num_events = 100000
 amount = int(num_events * 2)
-#filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
+filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
 #filePath_gamma = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
-filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
+#filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
 
-#filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
+filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
 #filePath_proton = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
-filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"
+#filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"
 
 dm_gamma = DataManager(filePath_gamma)
 f_g = dm_gamma.get_h5_file()
@@ -670,16 +614,6 @@ print("Test data 1 shape:", np.shape(test_data_1))
 print("Test labels 1 shape:", np.shape(test_labels_1))
 
 
-'''
-i = tf.keras.layers.Input([None, None, 3], dtype = tf.uint8)
-x = tf.cast(i, tf.float32)
-x = tf.keras.applications.resnet50.preprocess_input(x)
-core = tf.keras.applications.resnet50()
-x = core(x)
-model = tf.keras.Model(inputs=[i], outputs=[x])
-
-train_data_1 = model(train_data_1)
-'''
 
 plot_image_2by2(train_data,4,train_labels_multishape,string="train",dt=formatted_datetime)
 #plot_image_2by2(train_data,40,train_labels_multishape,string="train",dt=formatted_datetime)
@@ -691,229 +625,97 @@ plot_image_2by2(test_data,4,test_labels_multishape,string="test",dt=formatted_da
 #plot_image_2by2(test_data,400,test_labels_multishape,string="test",dt=formatted_datetime)
 #plot_image_2by2(test_data,4000,test_labels_multishape,string="test",dt=formatted_datetime)
 
+# Adapt input data for ResNet50
+train_data_resnet = train_data.reshape(-1, input_shape[0], input_shape[1], input_shape[2])
+test_data_resnet = test_data.reshape(-1, input_shape[0], input_shape[1], input_shape[2])
 
-
-
-#Define the model for the single-view CNNs
-def create_cnn_model(input_shape):
-    input_layer = Input(shape=input_shape)
-    #x = Conv2D(3, (1, 1))(input_layer)
-    #preprocessed_input = preprocess_input(x)
-    Seq_model = Sequential()(input_layer) 
-    #ResNet50_model = ResNet50(include_top=False, weights=None, input_tensor=input_layer)
-
-    Conv1 = Conv2D(filters=200, kernel_size=kernel_size, padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,)(Seq_model)
-    LeakyRelu1 = LeakyReLU(alpha=0.1)(Conv1)
-    MaxPool1 = MaxPooling2D(pool_size=pool_size, padding='same')(LeakyRelu1)
-
-    #print("Before first Dropout")
-
-    Dropout1 = Dropout(rate)(MaxPool1)
-    Conv2 = Conv2D(filters=100, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg))(Dropout1)
-    LeakyRelu2 = LeakyReLU(alpha=0.1)(Conv2) 
-    MaxPool2 = MaxPooling2D(pool_size=pool_size, padding='same')(LeakyRelu2)
-
-    Dropout2 = Dropout(rate)(MaxPool2)
-    Conv3 = Conv2D(filters=50, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg))(Dropout2)
-    LeakyRelu3 = LeakyReLU(alpha=0.1)(Conv3) 
-    MaxPool3 = MaxPooling2D(pool_size=pool_size, padding='same')(LeakyRelu3)
-
-    Dropout3 = Dropout(rate)(MaxPool3)
-    Conv4 = Conv2D(filters=50, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg))(Dropout3)
-    LeakyRelu4 = LeakyReLU(alpha=0.1)(Conv4) 
-    MaxPool4 = MaxPooling2D(pool_size=pool_size, padding='same')(LeakyRelu4)
-
-    Dropout4 = Dropout(rate)(MaxPool4)
-    Conv5 = Conv2D(filters=100, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg))(Dropout4)
-    LeakyRelu5 = LeakyReLU(alpha=0.1)(Conv5) 
-    MaxPool5 = MaxPooling2D(pool_size=pool_size, padding='same')(LeakyRelu5)
-
-    Dropout5 = Dropout(rate)(MaxPool5)
-    Conv6 = Conv2D(filters=100, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg))(Dropout5)
-    MaxPool6 = MaxPooling2D(pool_size=pool_size, padding='same')(Conv6)
-
-    Dropout6 = Dropout(rate)(MaxPool6)
-    Conv7 = Conv2D(filters=100, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg))(Dropout6)
-    MaxPool7 = MaxPooling2D(pool_size=pool_size, padding='same')(Conv7)
-
-    model = Model(inputs=input_layer, outputs=MaxPool7)
-    return model
-
-# Define the model for the combination of the previous CNNs and the final CNN for classification
-
-def run_multiview_model(models,inputs):
-
-    merged = concatenate(models)
-
-    Dropout1 = Dropout(rate)(merged)
-    Conv_merged1 = Conv2D(filters=100,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout1)
-    MaxPool_merged1 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged1)
-
-    Dropout2 = Dropout(rate)(MaxPool_merged1)
-    Conv_merged2 = Conv2D(filters=50,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout2)
-    MaxPool_merged2 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged2)
-
-    Dropout3 = Dropout(rate)(MaxPool_merged2)
-    Conv_merged3 = Conv2D(filters=80,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout3)
-    MaxPool_merged3 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged3)
-
-    Dropout31 = Dropout(rate)(MaxPool_merged3)
-    Conv_merged31 = Conv2D(filters=140,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout31)
-    MaxPool_merged31 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged31)
-
-    Flat_merged1 = Flatten()(MaxPool_merged31)
-    Dropout4 = Dropout(rate)(Flat_merged1)
-    dense_layer_merged1 = Dense(units=100, activation='relu')(Dropout4)
-
-    Dropout6 = Dropout(rate)(dense_layer_merged1)
-    dense_layer_merged3 = Dense(units=1, activation='sigmoid')(Dropout6)
-
-    model = Model(inputs=inputs, outputs=dense_layer_merged3)
-    return model
-
-# Create four separate CNN models
-input_1 = Input(shape=input_shape)
-cnn_model_1 = create_cnn_model(input_shape)(input_1)
-
-input_2 = Input(shape=input_shape)
-cnn_model_2 = create_cnn_model(input_shape)(input_2)
-
-input_3 = Input(shape=input_shape)
-cnn_model_3 = create_cnn_model(input_shape)(input_3)
-
-input_4 = Input(shape=input_shape)
-cnn_model_4 = create_cnn_model(input_shape)(input_4)
-
-
-def preprocess_input_resnet(data):
-    # Expand single-channel image to three channels
-    rgb_data = np.repeat(data,3,axis=-1)
-    mean = [103.939, 116.779, 123.68]
-    std = None
-
-    rgb_data[:,:,:,:,0] -= mean[0]
-    rgb_data[:,:,:,:,1] -= mean[1]
-    rgb_data[:,:,:,:,2] -= mean[2]
-    return rgb_data
-
-def custom_preprocess_input(data):
-    normalized_data = np.empty(data.shape)
-    # Perform custom preprocessing (e.g., scaling)
-    #max_values = np.max(data,axis=(2,3,4),keepdims=True)
-    for event in range(data.shape[0]):
-        #max_values = np.max(data,axis=(1,2,3,4))
-        #print(max_values)
-        #normalized_data = np.where(max_values == 0, data, data / max_values[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis])  
-        max_value = np.max(data[event]) 
-        if max_value == 0:
-            normalized_data[event] = data[event]
-        else:
-            data[event][np.isnan(data[event])] = 0
-            normalized_data[event] = data[event]/max_value     
-    return normalized_data
-
-cpp_train_data = custom_preprocess_input(train_data)
-cpp_test_data = custom_preprocess_input(test_data)
-
-#pp_train_data = preprocess_input_resnet(train_data)
-#pp_test_data = preprocess_input_resnet(test_data)
-
-'''
-cpp_test_data_1 = custom_preprocess_input(test_data_1)
-cpp_test_data_2 = custom_preprocess_input(test_data_2)
-cpp_test_data_3 = custom_preprocess_input(test_data_3)
-cpp_test_data_4 = custom_preprocess_input(test_data_4)
-
-cpp_train_data_1 = custom_preprocess_input(train_data_1)
-cpp_train_data_2 = custom_preprocess_input(train_data_2)
-cpp_train_data_3 = custom_preprocess_input(train_data_3)
-cpp_train_data_4 = custom_preprocess_input(train_data_4)
-
-
-#pp_test_data_1 = preprocess_input(convert_to_rgb(test_data_1.reshape(test_data_1.shape[:-1])))
-#pp_test_data_2 = preprocess_input(convert_to_rgb(test_data_2.reshape(test_data_2.shape[:-1])))
-#pp_test_data_3 = preprocess_input(convert_to_rgb(test_data_3.reshape(test_data_3.shape[:-1])))
-#pp_test_data_4 = preprocess_input(convert_to_rgb(test_data_4.reshape(test_data_4.shape[:-1])))
-
-#pp_train_data_1 = preprocess_input(convert_to_rgb(train_data_1.reshape(train_data_1.shape[:-1])))
-#pp_train_data_2 = preprocess_input(convert_to_rgb(train_data_2.reshape(train_data_2.shape[:-1])))
-#pp_train_data_3 = preprocess_input(convert_to_rgb(train_data_3.reshape(train_data_3.shape[:-1])))
-#pp_train_data_4 = preprocess_input(convert_to_rgb(train_data_4.reshape(train_data_4.shape[:-1])))
-'''
-'''
-cpp_train_data = np.zeros_like(train_data)
-cpp_train_data[:,0,:,:]=cpp_train_data_1
-cpp_train_data[:,1,:,:]=cpp_train_data_2
-cpp_train_data[:,2,:,:]=cpp_train_data_3
-cpp_train_data[:,3,:,:]=cpp_train_data_4
-
-pp_train_data = np.zeros_like(convert_to_rgb(train_data.reshape(train_data.shape[:-1])))
-pp_train_data[:,0,:,:]=pp_train_data_1
-pp_train_data[:,1,:,:]=pp_train_data_2
-pp_train_data[:,2,:,:]=pp_train_data_3
-pp_train_data[:,3,:,:]=pp_train_data_4
-'''
-
-#plot_image_2by2_v2(cpp_train_data_1,cpp_train_data_2,cpp_train_data_3,cpp_train_data_4,4,train_labels_multishape,string="cpptrain",dt=formatted_datetime)
-#plot_image_2by2_v2(pp_train_data_1,pp_train_data_2,pp_train_data_3,pp_train_data_4,4,train_labels_multishape,string="pptrain",dt=formatted_datetime)
-
-plot_image_2by2(cpp_train_data,4,train_labels_multishape,string="cpptrain",dt=formatted_datetime)
-plot_image_2by2(cpp_test_data,4,test_labels_multishape,string="cpptest",dt=formatted_datetime)
-
-#print("Max:",np.max(train_data_1))
-#print("Max_pp:",np.max(pp_train_data_1))
-
-# include early_stopping here, to see how it changes compared to previous model designs
-#early_stopping = EarlyStopping(monitor='val_loss', patience=patience)
-
-model_multi = run_multiview_model([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4])
-model_multi.summary()
-#model_multi.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'],from_logits=True) 
+from keras.layers import Input, Concatenate, Dropout, Dense, Flatten
+from keras.models import Model
+from keras.applications import ResNet50
+from keras.optimizers import Adam
 from keras.losses import BinaryCrossentropy
 
-# Create the loss function with from_logits=True
-loss_fn = BinaryCrossentropy(from_logits=True)
+# Create separate ResNet50 models for each view
+def create_resnet_model(input_shape, dropout_rate=0.25):
+    inputs = Input(shape=input_shape)
+    x = Conv2D(filters=64, kernel_size=(7, 7), padding='same', activation='relu')(inputs)
+    x = MaxPooling2D(pool_size=(2, 2), padding='same')(x)
 
-# Compile the model using the created loss function
-model_multi.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+    # Add additional convolutional blocks here with specified dropout rate
+    x = Conv2D(filters=128, kernel_size=(3, 3), padding='same', activation='relu')(x)
+    x = MaxPooling2D(pool_size=(2, 2), padding='same')(x)
+    x = Dropout(dropout_rate)(x)
 
-#global training_generator
-#global testing_generator
+    x = Conv2D(filters=256, kernel_size=(3, 3), padding='same', activation='relu')(x)
+    x = MaxPooling2D(pool_size=(2, 2), padding='same')(x)
+    x = Dropout(dropout_rate)(x)
 
-#training_generator = MyGenerator(train_data_1,train_data_2,train_data_3,train_data_4,train_labels,batch_size=batch_size)
-#testing_generator = MyGenerator(test_data_1,test_data_2,test_data_3,test_data_4,test_labels,batch_size=batch_size)
+    x = Conv2D(filters=512, kernel_size=(3, 3), padding='same', activation='relu')(x)
+    x = MaxPooling2D(pool_size=(2, 2), padding='same')(x)
+    x = Dropout(dropout_rate)(x)
 
-#training_generator = MyGenerator(train_data_1,train_data_2,train_data_3,train_data_4,train_labels,batch_size=batch_size)
-#testing_generator = MyGenerator(test_data_1,test_data_2,test_data_3,test_data_4,test_labels,batch_size=batch_size)
+    x = GlobalMaxPooling2D()(x)
+    
+    model = Model(inputs=inputs, outputs=x)
+    return model
 
-# Generate data and plot the first batch
-#batch_index = 0  
-#training_generator.plot_batch(batch_index)
+input_1 = Input(shape=input_shape)
+resnet_model_1 = create_resnet_model(input_shape)(input_1)
 
-#testing_generator.reset_counters()
-#testing_generator.reset_counters()
-early_stopping_callback_1=tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=patience,verbose=1,mode='min')
+input_2 = Input(shape=input_shape)
+resnet_model_2 = create_resnet_model(input_shape)(input_2)
 
-print("Starting the Fitting ...")
+input_3 = Input(shape=input_shape)
+resnet_model_3 = create_resnet_model(input_shape)(input_3)
 
-'''
+input_4 = Input(shape=input_shape)
+resnet_model_4 = create_resnet_model(input_shape)(input_4)
+
+# Concatenate the features from all views
+merged = concatenate([resnet_model_1, resnet_model_2, resnet_model_3, resnet_model_4])
+
+# Continue with your classification layers
+x = Dropout(0.5)(merged)
+x = Dense(units=100, activation='relu')(x)
+x = Dropout(0.5)(x)
+predictions = Dense(units=1, activation='sigmoid')(x)
+
+# Create the final model
+model_multi = Model(inputs=[input_1, input_2, input_3, input_4], outputs=predictions)
+
+# Compile the model
+optimizer = Adam(learning_rate=0.001)
+model_multi.compile(optimizer=optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+
+# Print model summary
+model_multi.summary()
+
+
+
+# Define early stopping callback
+early_stopping_callback = tf.keras.callbacks.EarlyStopping(
+    monitor='val_loss', patience=patience, verbose=1, mode='min'
+)
+
+# Training
 history = model_multi.fit(
-    x=([training_generator.images_1, training_generator.images_2, training_generator.images_3, training_generator.images_4], training_generator.labels),
+    [train_data[:, i, :, :] for i in range(4)],
+    train_labels,
     epochs=num_epochs,
     batch_size=batch_size,
     validation_data=(
-        [testing_generator.images_1, testing_generator.images_2, testing_generator.images_3, testing_generator.images_4],
-        testing_generator.labels
+        [test_data[:, i, :, :] for i in range(4)],
+        test_labels
     ),
-    callbacks=[early_stopping_callback_1]
+    callbacks=[early_stopping_callback]
 )
-'''
+
+
+
+# Display model summary
+#model.summary()
 #history = model_multi.fit(training_generator, epochs=num_epochs, batch_size= batch_size,validation_data=testing_generator, callbacks=[early_stopping_callback_1])
-#history = model_multi.fit([cpp_train_data_1,cpp_train_data_2,cpp_train_data_3,cpp_train_data_4],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([cpp_test_data_1,cpp_test_data_2,cpp_test_data_3,cpp_test_data_4], test_labels), callbacks=[early_stopping_callback_1])
-#history_pp = history = model_multi.fit([pp_train_data_1,pp_train_data_2,pp_train_data_3,pp_train_data_4],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([pp_test_data_1,pp_test_data_2,pp_test_data_3,pp_test_data_4], test_labels), callbacks=[early_stopping_callback_1])
-
-
-history = model_multi.fit([cpp_train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([cpp_test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping_callback_1])
+#history = model_multi.fit([train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping_callback_1])
 str_batch_size = '{}'.format(batch_size)
 str_rate = '{}'.format(rate*100)
 str_reg = '{}'.format(reg)
@@ -923,14 +725,10 @@ str_cnz = '{}'.format(cut_nonzero)
 
 name_str = fnr + "_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + str_reg + "reg" + str_thr + "threshold" + str_cnz + "nonzerocut" + "_" + formatted_datetime 
 
-
-
+history_name = "HistoryFiles/history_" + name_str + ".pkl"
 print("... Finished the Fitting")
 
 # Save the history files for later usage in other scripts
-
-history_name = "HistoryFiles/history_" + name_str + ".pkl"
-
 with open(history_name, 'wb') as file:
     pickle.dump(history.history, file)
 
@@ -951,8 +749,7 @@ ax[1].set_xlabel('Epoch')
 print("Image created")
 
 
-filename_savefig = "Images/Test_Cluster_" + name_str + ".png"
+filename_savefig = "../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/Images/Test_Cluster_" + name_str + ".png"
 fig.savefig(filename_savefig, bbox_inches='tight')
 
 print("Image saved")
-

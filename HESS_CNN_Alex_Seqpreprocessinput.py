@@ -379,7 +379,7 @@ cut_nonzero = args.cut
 num_events = args.numevents
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
-fnr = "ResNet50_cpp" 
+fnr = "Sequential_cpp" 
 
 current_datetime = datetime.now()
 formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M")
