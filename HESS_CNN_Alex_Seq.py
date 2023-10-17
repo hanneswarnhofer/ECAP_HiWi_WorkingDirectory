@@ -37,7 +37,7 @@ from tensorflow.keras.applications.resnet50 import ResNet50
 from tensorflow.keras.preprocessing import image
 from tensorflow.keras.applications.resnet50 import preprocess_input, decode_predictions
 from tensorflow.keras import layers, models, callbacks, optimizers, regularizers
-from tensorflow.keras.layers import Input, Concatenate, concatenate, Dense,Embedding, Conv2D, Conv3D, MaxPooling2D, MaxPooling3D, Flatten, Dropout, ConvLSTM2D, BatchNormalization, LeakyReLU
+from tensorflow.keras.layers import Input, Lambda, Concatenate, concatenate, Dense,Embedding, Conv2D, Conv3D, MaxPooling2D, MaxPooling3D, Flatten, Dropout, ConvLSTM2D, BatchNormalization, LeakyReLU
 from tensorflow.keras.callbacks import LearningRateScheduler, EarlyStopping
 from tensorflow.keras.models import Model, Sequential
 
@@ -361,13 +361,15 @@ print("Functions Defined.")
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-e", "--epochs", type=int)
-parser.add_argument("-b", "--batch_size", type=int)
-parser.add_argument("-r", "--rate", type=float)
-parser.add_argument("-reg", "--regulization", type=float)
-parser.add_argument("-t", "--threshold", type=float)
-parser.add_argument("-c", "--cut", type=int)
-parser.add_argument("-ne", "--numevents", type=int)
+parser.add_argument("-e", "--epochs", type=int, default=50)
+parser.add_argument("-b", "--batch_size", type=int,default=64)
+parser.add_argument("-r", "--rate", type=float,default=0.0001)
+parser.add_argument("-reg", "--regulization", type=float,default=0.00001)
+parser.add_argument("-t", "--threshold", type=float,default=60)
+parser.add_argument("-c", "--cut", type=int,default=2)
+parser.add_argument("-ne", "--numevents", type=int,default=100000)
+parser.add_argument("-ft","--fusiontype",type=str,default="latefc")
+parser.add_argument("-n","--normalize",type=str,default="nonorm")
 
 args = parser.parse_args()
 num_epochs = args.epochs
@@ -377,6 +379,8 @@ reg = args.regulization
 sum_threshold = args.threshold
 cut_nonzero = args.cut
 num_events = args.numevents
+fusiontype = args.fusiontype
+normalize = args.normalize
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
 fnr = "Sequential" 
@@ -669,6 +673,20 @@ print("Train labels 1 shape:", np.shape(train_labels_1))
 print("Test data 1 shape:", np.shape(test_data_1))
 print("Test labels 1 shape:", np.shape(test_labels_1))
 
+mean_values = np.mean(train_data,axis=(2,3))
+max_values = np.amax(train_data,axis=(2,3))
+
+mean = np.mean(mean_values)
+max = np.max(max_values)
+
+print("Overall Mean:", mean)
+print("Overall Max:", max)
+#print(mean_values)
+#print(max_values)
+
+if normalize == "norm": 
+    train_data = train_data/max
+    test_data = test_data/max
 
 '''
 i = tf.keras.layers.Input([None, None, 3], dtype = tf.uint8)
@@ -741,7 +759,7 @@ def create_cnn_model(input_shape):
 
 # Define the model for the combination of the previous CNNs and the final CNN for classification
 
-def run_multiview_model(models,inputs):
+def run_multiview_model_latefusionfc(models,inputs):
 
     merged = concatenate(models)
 
@@ -770,6 +788,102 @@ def run_multiview_model(models,inputs):
 
     model = Model(inputs=inputs, outputs=dense_layer_merged3)
     return model
+
+def run_multiview_model_latefusionmax(models,inputs):
+
+    max_pooled = Lambda(lambda x: tf.reduce_max(x, axis=0), output_shape=input_shape)(models)
+    Dropout1 = Dropout(rate)(max_pooled)
+    Conv_merged1 = Conv2D(filters=100,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout1)
+    MaxPool_merged1 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged1)
+
+    Dropout2 = Dropout(rate)(MaxPool_merged1)
+    Conv_merged2 = Conv2D(filters=50,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout2)
+    MaxPool_merged2 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged2)
+
+    Dropout3 = Dropout(rate)(MaxPool_merged2)
+    Conv_merged3 = Conv2D(filters=80,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout3)
+    MaxPool_merged3 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged3)
+
+    Dropout31 = Dropout(rate)(MaxPool_merged3)
+    Conv_merged31 = Conv2D(filters=140,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout31)
+    MaxPool_merged31 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged31)
+
+    Flat_merged1 = Flatten()(MaxPool_merged31)
+    Dropout4 = Dropout(rate)(Flat_merged1)
+    dense_layer_merged1 = Dense(units=100, activation='relu')(Dropout4)
+
+    Dropout6 = Dropout(rate)(dense_layer_merged1)
+    dense_layer_merged3 = Dense(units=1, activation='sigmoid')(Dropout6)
+
+    model = Model(inputs=inputs, outputs=dense_layer_merged3)
+    return model
+
+def run_multiview_model_earlymax(models,inputs):
+    stacked = tf.stack(models, axis=4)
+    fused_feature_map = tf.reduce_max(stacked,axis=4)
+    Dropout1 = Dropout(rate)(fused_feature_map)
+    Conv_merged1 = Conv2D(filters=100,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout1)
+    MaxPool_merged1 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged1)
+
+    Dropout2 = Dropout(rate)(MaxPool_merged1)
+    Conv_merged2 = Conv2D(filters=50,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout2)
+    MaxPool_merged2 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged2)
+
+    Dropout3 = Dropout(rate)(MaxPool_merged2)
+    Conv_merged3 = Conv2D(filters=80,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout3)
+    MaxPool_merged3 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged3)
+
+    Dropout31 = Dropout(rate)(MaxPool_merged3)
+    Conv_merged31 = Conv2D(filters=140,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout31)
+    MaxPool_merged31 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged31)
+
+    Flat_merged1 = Flatten()(MaxPool_merged31)
+    Dropout4 = Dropout(rate)(Flat_merged1)
+    dense_layer_merged1 = Dense(units=100, activation='relu')(Dropout4)
+
+    Dropout6 = Dropout(rate)(dense_layer_merged1)
+    dense_layer_merged3 = Dense(units=1, activation='sigmoid')(Dropout6)
+
+    model = Model(inputs=inputs, outputs=dense_layer_merged3)
+    return model
+
+
+def run_multiview_model_earlyconv(models,inputs):
+    stacked = tf.stack(models, axis=4)
+    # Define a 1x1 convolutional layer with trainable weights
+    conv_weights = tf.Variable(tf.random.normal([1, 1, 4, 1]), trainable=True)
+    convolution = tf.nn.conv2d(stacked, conv_weights, strides=[1, 1, 1, 1], padding="SAME")
+
+    # Apply ReLU activation or any other desired activation function
+    fused_feature_map = tf.nn.relu(convolution)
+    Dropout1 = Dropout(rate)(fused_feature_map)
+    Conv_merged1 = Conv2D(filters=100,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout1)
+    MaxPool_merged1 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged1)
+
+    Dropout2 = Dropout(rate)(MaxPool_merged1)
+    Conv_merged2 = Conv2D(filters=50,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout2)
+    MaxPool_merged2 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged2)
+
+    Dropout3 = Dropout(rate)(MaxPool_merged2)
+    Conv_merged3 = Conv2D(filters=80,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout3)
+    MaxPool_merged3 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged3)
+
+    Dropout31 = Dropout(rate)(MaxPool_merged3)
+    Conv_merged31 = Conv2D(filters=140,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout31)
+    MaxPool_merged31 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged31)
+
+    Flat_merged1 = Flatten()(MaxPool_merged31)
+    Dropout4 = Dropout(rate)(Flat_merged1)
+    dense_layer_merged1 = Dense(units=100, activation='relu')(Dropout4)
+
+    Dropout6 = Dropout(rate)(dense_layer_merged1)
+    dense_layer_merged3 = Dense(units=1, activation='sigmoid')(Dropout6)
+
+    model = Model(inputs=inputs, outputs=dense_layer_merged3)
+    return model
+
+
+
 
 # Create four separate CNN models
 input_1 = Input(shape=input_shape)
@@ -857,8 +971,8 @@ pp_train_data[:,3,:,:]=pp_train_data_4
 #plot_image_2by2_v2(cpp_train_data_1,cpp_train_data_2,cpp_train_data_3,cpp_train_data_4,4,train_labels_multishape,string="cpptrain",dt=formatted_datetime)
 #plot_image_2by2_v2(pp_train_data_1,pp_train_data_2,pp_train_data_3,pp_train_data_4,4,train_labels_multishape,string="pptrain",dt=formatted_datetime)
 
-plot_image_2by2(train_data,4,train_labels_multishape,string="train",dt=formatted_datetime)
-plot_image_2by2(test_data,4,test_labels_multishape,string="test",dt=formatted_datetime)
+#plot_image_2by2(train_data,4,train_labels_multishape,string="train",dt=formatted_datetime)
+#plot_image_2by2(test_data,4,test_labels_multishape,string="test",dt=formatted_datetime)
 
 #print("Max:",np.max(train_data_1))
 #print("Max_pp:",np.max(pp_train_data_1))
@@ -866,16 +980,10 @@ plot_image_2by2(test_data,4,test_labels_multishape,string="test",dt=formatted_da
 # include early_stopping here, to see how it changes compared to previous model designs
 #early_stopping = EarlyStopping(monitor='val_loss', patience=patience)
 
-model_multi = run_multiview_model([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4])
-model_multi.summary()
-#model_multi.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'],from_logits=True) 
-from keras.losses import BinaryCrossentropy
 
-# Create the loss function with from_logits=True
-loss_fn = BinaryCrossentropy(from_logits=True)
 
-# Compile the model using the created loss function
-model_multi.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+
 
 #global training_generator
 #global testing_generator
@@ -892,7 +1000,7 @@ model_multi.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accu
 
 #testing_generator.reset_counters()
 #testing_generator.reset_counters()
-early_stopping_callback_1=tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=patience,verbose=1,mode='min')
+
 
 print("Starting the Fitting ...")
 
@@ -912,8 +1020,31 @@ history = model_multi.fit(
 #history = model_multi.fit([cpp_train_data_1,cpp_train_data_2,cpp_train_data_3,cpp_train_data_4],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([cpp_test_data_1,cpp_test_data_2,cpp_test_data_3,cpp_test_data_4], test_labels), callbacks=[early_stopping_callback_1])
 #history_pp = history = model_multi.fit([pp_train_data_1,pp_train_data_2,pp_train_data_3,pp_train_data_4],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([pp_test_data_1,pp_test_data_2,pp_test_data_3,pp_test_data_4], test_labels), callbacks=[early_stopping_callback_1])
 
+if fusiontype == "latefc":
+    model_multi = run_multiview_model_latefusionfc([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4])
+elif fusiontype == "latemax":
+    model_multi = run_multiview_model_latefusionmax([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4])
+elif fusiontype == "earlymax":
+    model_multi = run_multiview_model_earlymax([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4])
+elif fusiontype == "earlyconv":
+    model_multi = run_multiview_model_earlyconv([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4])
+else: print("ERROR: Fusiontype not known!!")
 
+model_multi.summary()
+
+
+#model_multi.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'],from_logits=True) 
+from keras.losses import BinaryCrossentropy
+
+# Create the loss function with from_logits=True
+loss_fn = BinaryCrossentropy(from_logits=True)
+early_stopping_callback_1=tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=patience,verbose=1,mode='min')
+
+# Compile the model using the created loss function
+model_multi.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
 history = model_multi.fit([train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping_callback_1])
+
+
 str_batch_size = '{}'.format(batch_size)
 str_rate = '{}'.format(rate*100)
 str_reg = '{}'.format(reg)
@@ -921,7 +1052,9 @@ str_num_epochs = '{}'.format(num_epochs)
 str_thr = '{}'.format(sum_threshold)
 str_cnz = '{}'.format(cut_nonzero)
 
-name_str = fnr + "_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + str_reg + "reg" + str_thr + "threshold" + str_cnz + "nonzerocut" + "_" + formatted_datetime 
+
+
+name_str = fnr + "_" + fusiontype + "_" + normalize + "_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + str_reg + "reg" + str_thr + "threshold" + str_cnz + "nonzerocut" + "_" + formatted_datetime 
 
 
 
