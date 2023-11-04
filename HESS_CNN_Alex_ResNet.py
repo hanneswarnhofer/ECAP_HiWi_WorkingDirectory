@@ -357,32 +357,6 @@ def plot_image_2by2_v2(image1,image2,image3,image4,event_nr,labels,string,dt):
     name = "Test_images/Test_figure_evnr_" + str_evnr + "_" + string + "_" + dt + ".png"
     fig.savefig(name)
 
-def preprocess_input_resnet(data):
-    # Expand single-channel image to three channels
-    rgb_data = np.repeat(data,3,axis=-1)
-    mean = [103.939, 116.779, 123.68]
-    std = None
-
-    rgb_data[:,:,:,:,0] -= mean[0]
-    rgb_data[:,:,:,:,1] -= mean[1]
-    rgb_data[:,:,:,:,2] -= mean[2]
-    return rgb_data
-
-def custom_preprocess_input(data):
-    normalized_data = np.empty(data.shape)
-    # Perform custom preprocessing (e.g., scaling)
-    #max_values = np.max(data,axis=(2,3,4),keepdims=True)
-    for event in range(data.shape[0]):
-        #max_values = np.max(data,axis=(1,2,3,4))
-        #print(max_values)
-        #normalized_data = np.where(max_values == 0, data, data / max_values[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis])  
-        max_value = np.max(data[event]) 
-        if max_value == 0:
-            normalized_data[event] = data[event]
-        else:
-            data[event][np.isnan(data[event])] = 0
-            normalized_data[event] = data[event]/max_value     
-    return normalized_data
 
 
 #print("Functions Defined.")
@@ -398,7 +372,6 @@ parser.add_argument("-c", "--cut", type=int,default=2)
 parser.add_argument("-ne", "--numevents", type=int,default=100000)
 parser.add_argument("-ft","--fusiontype",type=str,default="latefc")
 parser.add_argument("-n","--normalize",type=str,default="nonorm")
-parser.add_argument("-loc","--location",type=str,default="alex")
 
 args = parser.parse_args()
 num_epochs = args.epochs
@@ -410,34 +383,24 @@ cut_nonzero = args.cut
 num_events = args.numevents
 fusiontype = args.fusiontype
 normalize = args.normalize
-location = args.location
 
 print("############################################################################")
 print("\n #####################    FUSIONTYPE: ",fusiontype,"   #######################")
 
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
-fnr = "SequentialFusiontypes" 
+fnr = "ResNetFusiontypes_cpp" 
 
 current_datetime = datetime.now()
 formatted_datetime = current_datetime.strftime("%Y-%m-%d_%H-%M")
 print("Date-Time: ", formatted_datetime)
 
-#num_events = 2000
+#num_events = 1000
 amount = int(num_events * 2)
-
-if location == 'local':
-    filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
-    filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
-elif location == 'alex':    
-    filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
-    filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"
-else: print("Wrong location specified!")
-
-#filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
+filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
 #filePath_gamma = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
 #filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
 
-#filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
+filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
 #filePath_proton = "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
 #filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"
 
@@ -571,6 +534,22 @@ for event_nr in random_list:
     
 print("... Finished Mapping")
 
+'''
+print("Start Mapping...")
+for event_nr in random_list:
+    mapped_images_1[image_nr] = ct_14_mapper.map_image(tel1[event_nr][3][:, np.newaxis], 'HESS-I')
+    mapped_images_2[image_nr] = ct_14_mapper.map_image(tel2[event_nr][3][:, np.newaxis], 'HESS-I')
+    mapped_images_3[image_nr] = ct_14_mapper.map_image(tel3[event_nr][3][:, np.newaxis], 'HESS-I')   
+    mapped_images_4[image_nr] = ct_14_mapper.map_image(tel4[event_nr][3][:, np.newaxis], 'HESS-I')
+    mapped_labels[image_nr] = labels[event_nr]
+    image_nr=image_nr+1
+print("... Finished Mapping")
+'''
+#########################################   MAYBE TRY CONVERTING ALL "EMPTY" IMAGES IN SUCH A WAY
+#########################################   THAT ALL PIXELS BECOME ZERO? IF SUM < 0 -> ALL_PIXELS=0
+#########################################   
+
+
 mapped_images = np.array([mapped_images_1,mapped_images_2,mapped_images_3,mapped_images_4]) #mapped_images_5])
 print("Shape of mapped_images_1: ",np.shape(mapped_images_1))
 print("Shape of mapped_images: ",np.shape(mapped_images))
@@ -599,7 +578,7 @@ print("New shape of mapped_labels: ",np.shape(mapped_labels))
 # START WITH CNN STUFF
 
 
-patience = 15
+patience = 5
 input_shape = (41, 41, 1)
 #input_shape5 = (72,72,1)
 pool_size = 2
@@ -714,6 +693,16 @@ if normalize == "norm":
     train_data = train_data/max
     test_data = test_data/max
 
+'''
+i = tf.keras.layers.Input([None, None, 3], dtype = tf.uint8)
+x = tf.cast(i, tf.float32)
+x = tf.keras.applications.resnet50.preprocess_input(x)
+core = tf.keras.applications.resnet50()
+x = core(x)
+model = tf.keras.Model(inputs=[i], outputs=[x])
+
+train_data_1 = model(train_data_1)
+'''
 
 plot_image_2by2(train_data,4,train_labels_multishape,string="train",dt=formatted_datetime)
 #plot_image_2by2(train_data,40,train_labels_multishape,string="train",dt=formatted_datetime)
@@ -726,40 +715,24 @@ plot_image_2by2(test_data,4,test_labels_multishape,string="test",dt=formatted_da
 #plot_image_2by2(test_data,4000,test_labels_multishape,string="test",dt=formatted_datetime)
 
 
-def single_view_cnn(input_shape,freeze=False):
 
-    x = create_cnn_model(input_shape,freeze)
-    
-    Flat = Flatten()(x)
-
-    Dropout4 = Dropout(rate)(Flat)
-    dense_layer_merged1 = Dense(units=100, activation='relu')(Dropout4)
-
-    Dropout5 = Dropout(rate)(dense_layer_merged1)
-    dense_layer_merged2 = Dense(units=50, activation='relu')(Dropout5)
-
-    Dropout6 = Dropout(rate)(dense_layer_merged2)
-    dense_layer_merged3 = Dense(units=1, activation='sigmoid')(Dropout6)
-
-    if freeze:
-        for layer in model.layers:
-            layer.trainable = False
-
-
-    model = Model(inputs=input_layer, outputs=dense_layer_merged3)   
-    return model 
 
 #Define the model for the single-view CNNs
-def create_cnn_model(input_shape,freeze=False):
+def create_cnn_model(input_shape):
     input_layer = Input(shape=input_shape)
-    Conv1 = Conv2D(filters=25, kernel_size=kernel_size, padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,)(input_layer)
+    #x = Conv2D(3, (1, 1))(input_layer)
+    #preprocessed_input = preprocess_input(x)
+    #Seq_model = Sequential()(input_layer) 
+    ResNet50_model = ResNet50(include_top=False, weights=None, input_tensor=input_layer)
+
+    Conv1 = Conv2D(filters=200, kernel_size=kernel_size, padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,)(ResNet50_model.output) #(Seq_model)
     LeakyRelu1 = LeakyReLU(alpha=0.1)(Conv1)
     MaxPool1 = MaxPooling2D(pool_size=pool_size, padding='same')(LeakyRelu1)
 
     #print("Before first Dropout")
 
     Dropout1 = Dropout(rate)(MaxPool1)
-    Conv2 = Conv2D(filters=30, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg))(Dropout1)
+    Conv2 = Conv2D(filters=100, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg))(Dropout1)
     LeakyRelu2 = LeakyReLU(alpha=0.1)(Conv2) 
     MaxPool2 = MaxPooling2D(pool_size=pool_size, padding='same')(LeakyRelu2)
 
@@ -783,26 +756,15 @@ def create_cnn_model(input_shape,freeze=False):
     MaxPool6 = MaxPooling2D(pool_size=pool_size, padding='same')(Conv6)
 
     Dropout6 = Dropout(rate)(MaxPool6)
-    Conv7 = Conv2D(filters=200, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg))(Dropout6)
+    Conv7 = Conv2D(filters=100, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg))(Dropout6)
     MaxPool7 = MaxPooling2D(pool_size=pool_size, padding='same')(Conv7)
 
     model = Model(inputs=input_layer, outputs=MaxPool7)
-
-    #if freeze:
-    #    for layer in model.layers:
-    #        layer.trainable = False
-
     return model
 
 # Define the model for the combination of the previous CNNs and the final CNN for classification
 
-def run_multiview_model_latefusionfc(models,input_shapes,freeze=False):
-
-    #model_inputs = [Input(shape=input_shape) for input_shape in input_shapes]
-    #single_view_models = [create_cnn_model(input_shape, freeze) for input_shape in input_shapes]
-
-    #merged = concatenate([model(input) for model, input in zip(single_view_models, model_inputs)])
-
+def run_multiview_model_latefusionfc(models,inputs):
 
     merged = concatenate(models)
 
@@ -824,12 +786,12 @@ def run_multiview_model_latefusionfc(models,input_shapes,freeze=False):
 
     Flat_merged1 = Flatten()(MaxPool_merged31)
     Dropout4 = Dropout(rate)(Flat_merged1)
-    dense_layer_merged1 = Dense(units=25, activation='relu')(Dropout4)
+    dense_layer_merged1 = Dense(units=100, activation='relu')(Dropout4)
 
     Dropout6 = Dropout(rate)(dense_layer_merged1)
     dense_layer_merged3 = Dense(units=1, activation='sigmoid')(Dropout6)
 
-    model = Model(inputs=input_shapes, outputs=dense_layer_merged3)
+    model = Model(inputs=inputs, outputs=dense_layer_merged3)
     return model
 
 def run_multiview_model_latefusionmax(models,inputs):
@@ -868,7 +830,7 @@ def run_multiview_model_earlymax(models,inputs):
     Conv_merged1 = Conv2D(filters=100,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout1)
     MaxPool_merged1 = MaxPooling2D(pool_size=2,padding='same')(Conv_merged1)
 
-    
+
 
     Dropout2 = Dropout(rate)(MaxPool_merged1)
     Conv_merged2 = Conv2D(filters=50,kernel_size=[2,2],activation='relu',padding='same',input_shape=input_shape)(Dropout2)
@@ -933,46 +895,6 @@ def run_multiview_model_earlyconv(models,inputs):
     return model
 
 
-def preprocess_data(train_data, train_labels, threshold=0.000001):
-    # Get the dimensions of the input data
-    num_events, num_views, height, width, channels = train_data.shape
-    
-    # Reshape train_data into a single array with shape (num_events * num_views, height, width, channels)
-    reshaped_data = train_data.reshape(-1, height, width, channels)
-    reshaped_labels = np.repeat(train_labels,4,axis=0)
-
-
-    # Compute the sum of pixel values along the last axis (assuming your images are grayscale)
-    pixel_sums = np.sum(reshaped_data, axis=(1, 2, 3))
-    
-    # Find indices of images with sums greater than or equal to the threshold
-    valid_indices = np.where(pixel_sums >= threshold)
-    
-    # Filter the reshaped data based on valid_indices
-    filtered_data = reshaped_data[valid_indices]
-    
-    # Reshape train_labels to match the reshaped data
-    filtered_labels = reshaped_labels[valid_indices]
-
-    combined_data_labels = list(zip(filtered_data, filtered_labels))
-
-    # Shuffle the combined array
-    np.random.shuffle(combined_data_labels)
-
-    # Split the shuffled array back into filtered_data and filtered_labels
-    shuffled_data, shuffled_labels = zip(*combined_data_labels)
-
-    # Convert them back to NumPy arrays
-    shuffled_data = np.array(shuffled_data)
-    shuffled_labels = np.array(shuffled_labels)
-
-    return shuffled_data, shuffled_labels
-
-# Example usage:
-# filtered_train_data, filtered_train_labels = preprocess_data(train_data, train_labels, threshold=60)
-#This will reshape train_labels to match the reshaped train_data so that each image has the label assigned to the event it belongs to.
-
-
 
 
 # Create four separate CNN models
@@ -989,12 +911,38 @@ input_4 = Input(shape=input_shape)
 cnn_model_4 = create_cnn_model(input_shape)(input_4)
 
 
+def preprocess_input_resnet(data):
+    # Expand single-channel image to three channels
+    rgb_data = np.repeat(data,3,axis=-1)
+    mean = [103.939, 116.779, 123.68]
+    std = None
+
+    rgb_data[:,:,:,:,0] -= mean[0]
+    rgb_data[:,:,:,:,1] -= mean[1]
+    rgb_data[:,:,:,:,2] -= mean[2]
+    return rgb_data
+
+def custom_preprocess_input(data):
+    normalized_data = np.empty(data.shape)
+    # Perform custom preprocessing (e.g., scaling)
+    #max_values = np.max(data,axis=(2,3,4),keepdims=True)
+    for event in range(data.shape[0]):
+        #max_values = np.max(data,axis=(1,2,3,4))
+        #print(max_values)
+        #normalized_data = np.where(max_values == 0, data, data / max_values[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis])  
+        max_value = np.max(data[event]) 
+        if max_value == 0:
+            normalized_data[event] = data[event]
+        else:
+            data[event][np.isnan(data[event])] = 0
+            normalized_data[event] = data[event]/max_value     
+    return normalized_data
 
 #cpp_train_data = custom_preprocess_input(train_data)
 #cpp_test_data = custom_preprocess_input(test_data)
 
-#pp_train_data = preprocess_input_resnet(train_data)
-#pp_test_data = preprocess_input_resnet(test_data)
+train_data = preprocess_input_resnet(train_data)
+test_data = preprocess_input_resnet(test_data)
 
 '''
 cpp_test_data_1 = custom_preprocess_input(test_data_1)
@@ -1084,13 +1032,6 @@ history = model_multi.fit(
 #history = model_multi.fit([cpp_train_data_1,cpp_train_data_2,cpp_train_data_3,cpp_train_data_4],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([cpp_test_data_1,cpp_test_data_2,cpp_test_data_3,cpp_test_data_4], test_labels), callbacks=[early_stopping_callback_1])
 #history_pp = history = model_multi.fit([pp_train_data_1,pp_train_data_2,pp_train_data_3,pp_train_data_4],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([pp_test_data_1,pp_test_data_2,pp_test_data_3,pp_test_data_4], test_labels), callbacks=[early_stopping_callback_1])
 
-#model_multi.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'],from_logits=True) 
-from keras.losses import BinaryCrossentropy
-
-# Create the loss function with from_logits=True
-loss_fn = BinaryCrossentropy(from_logits=True)
-early_stopping_callback_1=tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=patience,verbose=1,mode='min')
-
 if fusiontype == "latefc":
     model_multi = run_multiview_model_latefusionfc([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4])
 elif fusiontype == "latemax":
@@ -1099,25 +1040,21 @@ elif fusiontype == "earlymax":
     model_multi = run_multiview_model_earlymax([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4])
 elif fusiontype == "earlyconv":
     model_multi = run_multiview_model_earlyconv([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4])
-elif fusiontype == "single":
-    filtered_train_data,filtered_train_labels = preprocess_data(train_data,train_labels)
-    filtered_test_data,filtered_test_labels = preprocess_data(test_data,test_labels)
-    print(np.shape(filtered_train_data))
-    print(np.shape(filtered_train_labels))
-    model_multi = single_view_cnn(input_shape)
-    #model_multi.summary()
-
 else: print("ERROR: Fusiontype not known!!")
 
 model_multi.summary()
 
 
-if fusiontype == "single":
-    model_multi.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    history = model_multi.fit(filtered_train_data,filtered_train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=(filtered_test_data,filtered_test_labels),callbacks=[early_stopping_callback_1])
-else:
-    model_multi.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-    history = model_multi.fit([train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping_callback_1])
+#model_multi.compile(loss='binary_crossentropy',optimizer='adam',metrics=['accuracy'],from_logits=True) 
+from keras.losses import BinaryCrossentropy
+
+# Create the loss function with from_logits=True
+loss_fn = BinaryCrossentropy(from_logits=True)
+early_stopping_callback_1=tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=patience,verbose=1,mode='min')
+
+# Compile the model using the created loss function
+model_multi.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+history = model_multi.fit([train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping_callback_1])
 
 
 str_batch_size = '{}'.format(batch_size)
