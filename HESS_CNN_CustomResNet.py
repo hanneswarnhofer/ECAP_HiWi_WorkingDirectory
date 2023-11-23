@@ -154,7 +154,7 @@ def rotate(pix_pos, rotation_angle=0):
     pixel_positions = np.squeeze(np.asarray(np.dot(rotation_matrix, pix_pos)))
     return pixel_positions
 
-def preprocess_data(train_data, train_labels, threshold=0.000001):
+def preprocess_data(train_data, train_labels, threshold=0.00001):
     # Get the dimensions of the input data
     num_events, num_views, height, width, channels = train_data.shape
     
@@ -187,7 +187,10 @@ def preprocess_data(train_data, train_labels, threshold=0.000001):
     shuffled_data = np.array(shuffled_data)
     shuffled_labels = np.array(shuffled_labels)
 
+
+
     return shuffled_data, shuffled_labels
+
 
 
 def plot_image_2by2(train_data,event_nr,labels,string,dt):
@@ -235,32 +238,130 @@ def plot_image_2by2(train_data,event_nr,labels,string,dt):
     ax[0, 1].text(0.05, 0.95, str_label2, transform=ax[0, 1].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
     ax[1, 0].text(0.05, 0.95, str_label3, transform=ax[1, 0].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
     ax[1, 1].text(0.05, 0.95, str_label4, transform=ax[1, 1].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
-    plt.show()
+    #plt.show()
+    #time.sleep(3)
+    #plt.close()
 
     print("Min. and Max. Value for Image 1: ", np.min(pltimage1), " - " , np.max(pltimage1) , ". Sum: ", np.sum(pltimage1))
     print("Min. and Max. Value for Image 2: ", np.min(pltimage2), " - " , np.max(pltimage2), ". Sum: ", np.sum(pltimage2))
     print("Min. and Max. Value for Image 3: ", np.min(pltimage3), " - " , np.max(pltimage3), ". Sum: ", np.sum(pltimage3))
     print("Min. and Max. Value for Image 4: ", np.min(pltimage4), " - " , np.max(pltimage4), ". Sum: ", np.sum(pltimage4))
 
-    #str_evnr = '{}'.format(event_nr)
-    #name = "Test_images/Test_figure_evnr_" + str_evnr + "_" + string + "_" + dt + ".png"
-    #fig.savefig(name)
+    str_evnr = '{}'.format(event_nr)
+    name = "Test_images/Test_figure_evnr_" + str_evnr + "_" + string + "_" + dt + ".png"
+    fig.savefig(name)#
+
+def plot_single_image_2by2(train_data,event_nr,labels,string,dt):
+    
+    print("Plotting Example Single Images. Event Nr: ", event_nr , " to " , (event_nr+3))
+
+    image1 = train_data
+
+
+    pltimage1 = image1[event_nr]
+    pltimage2 = image1[event_nr+1]
+    pltimage3 = image1[event_nr+2]
+    pltimage4 = image1[event_nr+3]
+
+    fig, ax = plt.subplots(2,2)
+
+    im1 = ax[0,0].imshow(pltimage1[:,:,0], cmap='viridis',vmin=0)
+    im2 = ax[0,1].imshow(pltimage2[:,:,0], cmap='viridis',vmin=0)
+    im3 = ax[1,0].imshow(pltimage3[:,:,0], cmap='viridis',vmin=0)
+    im4 = ax[1,1].imshow(pltimage4[:,:,0], cmap='viridis',vmin=0)
+
+    cbar1 = fig.colorbar(im1, ax=ax[0, 0], orientation='vertical')
+    cbar2 = fig.colorbar(im2, ax=ax[0, 1], orientation='vertical')
+    cbar3 = fig.colorbar(im3, ax=ax[1, 0], orientation='vertical')
+    cbar4 = fig.colorbar(im4, ax=ax[1, 1], orientation='vertical')
+
+
+    label1 = labels[event_nr].ravel()
+    label2 = labels[event_nr+2].ravel()
+    label3 = labels[event_nr+3].ravel()
+    label4 = labels[event_nr+4].ravel()
+
+    str_label1 = '{}'.format(label1)
+    str_label2 = '{}'.format(label2)
+    str_label3 = '{}'.format(label3)
+    str_label4 = '{}'.format(label4)
+
+    ax[0, 0].text(0.05, 0.95, str_label1, transform=ax[0, 0].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
+    ax[0, 1].text(0.05, 0.95, str_label2, transform=ax[0, 1].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
+    ax[1, 0].text(0.05, 0.95, str_label3, transform=ax[1, 0].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
+    ax[1, 1].text(0.05, 0.95, str_label4, transform=ax[1, 1].transAxes, color='white', fontsize=12, ha='center', va='center', bbox=dict(facecolor='black', alpha=0.7))
+    #plt.show()
+    #time.sleep(3)
+    #plt.close()
+
+    print("Min. and Max. Value for Image 1: ", np.min(pltimage1), " - " , np.max(pltimage1) , ". Sum: ", np.sum(pltimage1))
+    print("Min. and Max. Value for Image 2: ", np.min(pltimage2), " - " , np.max(pltimage2), ". Sum: ", np.sum(pltimage2))
+    print("Min. and Max. Value for Image 3: ", np.min(pltimage3), " - " , np.max(pltimage3), ". Sum: ", np.sum(pltimage3))
+    print("Min. and Max. Value for Image 4: ", np.min(pltimage4), " - " , np.max(pltimage4), ". Sum: ", np.sum(pltimage4))
+
+    str_evnr = '{}'.format(event_nr)
+    name = "Test_images/Test_figure_evnr_" + str_evnr + "_" + string + "_" + dt + ".png"
+    fig.savefig(name)
+
+def handle_nan(data,labels):
+    # Check for NaN values
+    nan_mask = np.isnan(data)
+        # Check if any image in an event has NaN values
+    nan_event_mask = np.any(np.any(np.any(nan_mask, axis=-1), axis=-1), axis=-1)
+
+    # Get indices of events to be removed
+    events_to_remove = np.where(nan_event_mask)[0]
+
+    # Remove events from data and labels
+    data = np.delete(data, events_to_remove, axis=0)
+    labels = np.delete(labels, events_to_remove, axis=0)
+    
+    # Calculate total count and percentage of NaN entries
+    total_nan_entries = np.sum(nan_mask)
+    total_entries = np.size(data)
+    nan_percentage = (total_nan_entries / total_entries) * 100.0
+    
+    print(f"Total NaN entries: {total_nan_entries}")
+    print(f"Percentage of NaN entries: {nan_percentage:.6f}%")
+    
+    # Set NaN entries to zero
+    #data[nan_mask] = 0.0
+    
+    return data , labels
+
+def handle_inf(data):
+    # Check for NaN values
+    nan_mask = np.isinf(data)
+    
+    # Calculate total count and percentage of NaN entries
+    total_nan_entries = np.sum(nan_mask)
+    total_entries = np.size(data)
+    nan_percentage = (total_nan_entries / total_entries) * 100.0
+    
+    print(f"Total inf entries: {total_nan_entries}")
+    print(f"Percentage of inf entries: {nan_percentage:.6f}%")
+    
+    # Set NaN entries to zero
+    #data[nan_mask] = 0.0
+    
+    return data
 
 print("Functions Defined.")
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-e", "--epochs", type=int)
-parser.add_argument("-b", "--batch_size", type=int)
-parser.add_argument("-r", "--rate", type=float)
-parser.add_argument("-reg", "--regulization", type=float)
-parser.add_argument("-t", "--threshold", type=float)
-parser.add_argument("-c", "--cut", type=int)
-parser.add_argument("-ne", "--numevents", type=int)
+parser.add_argument("-e", "--epochs", type=int, default=50)
+parser.add_argument("-b", "--batch_size", type=int,default=64)
+parser.add_argument("-r", "--rate", type=float,default=0.0001)
+parser.add_argument("-reg", "--regulization", type=float,default=0.00001)
+parser.add_argument("-t", "--threshold", type=float,default=60)
+parser.add_argument("-c", "--cut", type=int,default=2)
+parser.add_argument("-ne", "--numevents", type=int,default=100000)
 parser.add_argument("-ft","--fusiontype",type=str,default="latefc")
 parser.add_argument("-n","--normalize",type=str,default="nonorm")
 parser.add_argument("-loc","--location",type=str,default="alex")
 parser.add_argument("-transfer","--transfer",type=str,default="no")
 parser.add_argument("-base","--base",type=str,default='moda')
+parser.add_argument("-lr",'--learningrate',type=float,default=0.001)
 
 args = parser.parse_args()
 num_epochs = args.epochs
@@ -275,7 +376,20 @@ normalize = args.normalize
 location = args.location
 transfer = args.transfer
 base = args.base
+learning_rate = args.learningrate
 
+print("############################################################################")
+print("\n #####################    FUSIONTYPE: ",fusiontype,"   #######################")
+print("\n")
+print("\n Epochs: ", num_epochs)
+print("\n Batch Size: ", batch_size)
+print("\n Regularization: ", reg)
+print("\n Events: ", num_events)
+print("\n Learning Rate: ", learning_rate)
+print("\n Transfer: ", transfer)
+print("\n Threshold: ", sum_threshold)
+print("\n Nonzero Cut: ", cut_nonzero)
+print("\n")
 # Define the appendix to the file, for being able to specify some general changes in the model structure and trace back the changes when comparing the results of t´different models
 fnr = "CustomResNet" 
 
@@ -334,6 +448,12 @@ tel4 = np.concatenate((tel4g_raw,tel4p_raw),axis=0)
 #tel5 = np.concatenate((tel5g_raw,tel5p_raw),axis=0)
 labels = np.concatenate((labelsg_ones,labelsp_zeros),axis=0)
 
+
+if np.all(np.logical_or(labels == 0, labels == 1)):
+    print("The label array only consists of zeros and ones.")
+else:
+    print("Attention: The label array contains values other than zeros and ones!!!")
+
 del tel1g_raw
 del tel2g_raw
 del tel3g_raw
@@ -364,16 +484,22 @@ print(os.getcwd())
 ct_14_mapper = ImageMapper(camera_types=["HESS-I"], pixel_positions={"HESS-I": rotate(geo_ct14.get_pix_pos())}, mapping_method={"HESS-I": "axial_addressing"})
 #ct_5_mapper = ImageMapper(camera_types=["HESS-II"], pixel_positions={"HESS-II": rotate(geo_ct5.get_pix_pos())}, mapping_method={"HESS-II": "axial_addressing"})
 
+'''
 mapped_images_1 = np.empty((num_events, 41,41,1))
 mapped_images_2 = np.empty((num_events, 41,41,1))
 mapped_images_3 = np.empty((num_events, 41,41,1))
 mapped_images_4 = np.empty((num_events, 41,41,1))
 #mapped_images_4 = np.empty((num_events, 41,41,1))
-mapped_labels = np.empty(num_events)
+mapped_labels = np.empty(num_events,dtype=int)
+'''
+
+mapped_images_1, mapped_images_2, mapped_images_3, mapped_images_4 = [], [], [], []
+mapped_labels = []
+valid_events_count = 0
 
 length = num_events
 max_value = len(tel1)
-random_list = np.random.randint(max_value, size=length)
+random_list = np.random.randint(max_value, size=2*length)
 image_nr = 0
 
 print(random_list[0:10])
@@ -382,54 +508,77 @@ cut_nonzero = 3
 threshold_value = 0.0001  # Adjust this threshold value as needed
 
 print("Start Mapping...")
+
 for event_nr in random_list:
 
+    if image_nr >= (num_events -1):
+        break
+    if event_nr < len(labels):
+        image_1 = ct_14_mapper.map_image(tel1[event_nr][3][:, np.newaxis], 'HESS-I')
+        image_2 = ct_14_mapper.map_image(tel2[event_nr][3][:, np.newaxis], 'HESS-I')
+        image_3 = ct_14_mapper.map_image(tel3[event_nr][3][:, np.newaxis], 'HESS-I')   
+        image_4 = ct_14_mapper.map_image(tel4[event_nr][3][:, np.newaxis], 'HESS-I')
+        #image_5 = ct_5_mapper.map_image(tel5[event_nr][3][:, np.newaxis], 'HESS-II')   
 
-    
-    image_1 = ct_14_mapper.map_image(tel1[event_nr][3][:, np.newaxis], 'HESS-I')
-    image_2 = ct_14_mapper.map_image(tel2[event_nr][3][:, np.newaxis], 'HESS-I')
-    image_3 = ct_14_mapper.map_image(tel3[event_nr][3][:, np.newaxis], 'HESS-I')   
-    image_4 = ct_14_mapper.map_image(tel4[event_nr][3][:, np.newaxis], 'HESS-I')
-    #image_5 = ct_5_mapper.map_image(tel5[event_nr][3][:, np.newaxis], 'HESS-II')   
+        image_1[image_1 < threshold_value] = 0
+        image_2[image_2 < threshold_value] = 0
+        image_3[image_3 < threshold_value] = 0
+        image_4[image_4 < threshold_value] = 0
 
-    # Apply threshold on the sum of pixel values
-    #sum_threshold = 60  # Adjust this value to your desired threshold
-    sum_threshold = 60 #args.threshold
+        image_1[image_1.sum() < sum_threshold] = 0
+        image_2[image_2.sum() < sum_threshold] = 0
+        image_3[image_3.sum() < sum_threshold] = 0
+        image_4[image_4.sum() < sum_threshold] = 0
 
-    if np.sum(image_1) < sum_threshold:
-        image_1[:] = 0
-    if np.sum(image_2) < sum_threshold:
-        image_2[:] = 0
-    if np.sum(image_3) < sum_threshold:
-        image_3[:] = 0
-    if np.sum(image_4) < sum_threshold:
-        image_4[:] = 0
-     
-    # Set all pixels lower than the threshold value to zero
-    image_1[image_1 < threshold_value] = 0
-    image_2[image_2 < threshold_value] = 0
-    image_3[image_3 < threshold_value] = 0
-    image_4[image_4 < threshold_value] = 0
-    #image_5[image_5 < threshold_value] = 0
+            # Set all pixels lower than the threshold value to zero
 
-    non_zero_count = sum(1 for img in [image_1, image_2, image_3, image_4] if np.sum(img) > 0)
-    if non_zero_count >= cut_nonzero:
-        mapped_images_1[image_nr] = image_1
-        mapped_images_2[image_nr] = image_2
-        mapped_images_3[image_nr] = image_3
-        mapped_images_4[image_nr] = image_4
-        #mapped_images_5[image_nr] = image_5
-        mapped_labels[image_nr] = labels[event_nr]
-        image_nr += 1
-    
+
+        non_zero_count = sum(1 for img in [image_1, image_2, image_3, image_4] if np.sum(img) > 0)
+        if non_zero_count >= cut_nonzero:
+            #mapped_images_1[image_nr] = image_1
+            #mapped_images_2[image_nr] = image_2
+            #mapped_images_3[image_nr] = image_3
+            #mapped_images_4[image_nr] = image_4
+            #mapped_images_5[image_nr] = image_5
+            #mapped_labels[image_nr] = labels[event_nr]
+            #image_nr += 1
+            mapped_images_1.append(image_1)
+            mapped_images_2.append(image_2)
+            mapped_images_3.append(image_3)
+            mapped_images_4.append(image_4)
+            # Assuming labels array is defined and contains 0 or 1 for each event_nr
+            mapped_labels.append(labels[event_nr])
+            
+            # Increment the valid events counter
+            valid_events_count += 1
+
+
+        if valid_events_count == num_events:
+            break
+    else:
+        print(f"Warning: event_nr {event_nr} exceeds the valid range for labels.")
+
+# Convert the lists to arrays
+mapped_images_1 = np.array(mapped_images_1)
+mapped_images_2 = np.array(mapped_images_2)
+mapped_images_3 = np.array(mapped_images_3)
+mapped_images_4 = np.array(mapped_images_4)
+mapped_labels = np.array(mapped_labels)
 print("... Finished Mapping")
+print("Mapped Label Selection: ",mapped_labels[-20:-10])
 
+nan_mask_mapped_labels = np.isnan(mapped_labels)
+if np.any(nan_mask_mapped_labels):
+    print("Warning: NaN values found in mapped_labels. Handle accordingly.")
 
 mapped_images = np.array([mapped_images_1,mapped_images_2,mapped_images_3,mapped_images_4]) #mapped_images_5])
 print("Shape of mapped_images_1: ",np.shape(mapped_images_1))
 print("Shape of mapped_images: ",np.shape(mapped_images))
 
-
+if np.all(np.logical_or(mapped_labels == 0, mapped_labels == 1)):
+    print("The mapped_labels array only consists of zeros and ones.")
+else:
+    print("Attention: The mapped_labels array contains values other than zeros and ones!!!")
 
 del tel1
 del tel2
@@ -449,6 +598,7 @@ mapped_labels = mapped_labels[:,np.newaxis]
 
 print("New shape of mapped_images: ",np.shape(mapped_images))
 print("New shape of mapped_labels: ",np.shape(mapped_labels))
+
 
 
 ########################################################
@@ -479,6 +629,7 @@ test_labels = []
 
 random_selection = np.random.rand(np.shape(mapped_images)[0]) <= 0.8
 
+#print("Mapped Labels:", mapped_labels)
 
 train_data.append(mapped_images[random_selection])
 test_data.append(mapped_images[~random_selection])
@@ -505,11 +656,14 @@ train_labels = train_labels.reshape(np.shape(train_labels[0]))
 test_labels = np.array(test_labels)
 test_labels = test_labels.reshape(np.shape(test_labels[0]))
 
+len_train = np.shape(train_data)[0]
+len_test = np.shape(test_data)[0]
+
+
 train_labels_multishape = np.zeros_like(train_data)
 test_labels_multishape = np.zeros_like(test_data)
 
-len_train = np.shape(train_data)[0]
-len_test = np.shape(test_data)[0]
+
 
 for i in range(0,len_train):
     train_labels_multishape[i,:,:,:] = train_labels[i]
@@ -524,12 +678,32 @@ print("Test data shape:", np.shape(test_data), "-->",round(100*len_test/(len_tra
 print("Train labels shape:", np.shape(train_labels))
 print("Test labels shape:", np.shape(test_labels))
 
+train_data,train_labels = handle_nan(train_data,train_labels)
+test_data,test_labels = handle_nan(test_data,test_labels)
 
-mean_values = np.mean(train_data,axis=(2,3))
-max_values = np.amax(train_data,axis=(2,3))
+print("Train data shape:", np.shape(train_data) , "-->",round(100*len_train/(len_train+len_test),2),"%")
+print("Test data shape:", np.shape(test_data), "-->",round(100*len_test/(len_train+len_test),2), "%")
+print("Train labels shape:", np.shape(train_labels))
+print("Test labels shape:", np.shape(test_labels))
 
-mean = np.mean(mean_values)
-max = np.max(max_values)
+#train_data = handle_inf(train_data)
+#test_data = handle_inf(test_data)
+
+max_values_train = np.max(train_data, axis=(1, 2, 3, 4))
+max_values_test = np.max(test_data, axis=(1, 2, 3, 4))
+
+max_mask_train = max_values_train < 1.0
+max_mask_test = max_values_test < 1.0
+
+max_values_train[max_mask_train] = 1.0
+max_values_test[max_mask_test] = 1.0
+
+
+
+if normalize == "norm": 
+    train_data = train_data/ max_values_train[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
+    test_data = test_data/ max_values_test[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
+    print("Data Normalized for each Event!")
 
 
 filtered_data,filtered_labels = preprocess_data(train_data,train_labels)
@@ -538,8 +712,15 @@ filtered_test_data,filtered_test_labels = preprocess_data(test_data,test_labels)
 print(np.shape(filtered_data))
 print(np.shape(filtered_labels))
 
-#plot_image_2by2(train_data,4,train_labels_multishape,string="train",dt=formatted_datetime)
-#plot_image_2by2(test_data,4,test_labels_multishape,string="test",dt=formatted_datetime)
+plot_image_2by2(train_data,4,train_labels_multishape,string="train",dt=formatted_datetime)
+plot_image_2by2(test_data,4,test_labels_multishape,string="test",dt=formatted_datetime)
+plot_single_image_2by2(filtered_data,4,filtered_labels,string="trainsingle",dt=formatted_datetime)
+plot_single_image_2by2(filtered_test_data,4,filtered_test_labels,string="testsingle",dt=formatted_datetime)
+
+#print("Train Labels: ",train_labels)
+#print("Test Labels: ",test_labels)
+#print("Train Single Labels: ",filtered_labels)
+#print("Test Single Labels: ",filtered_test_labels)
 
 from keras.layers import Input, Conv2D, BatchNormalization, Activation, Add, GlobalAveragePooling2D, Dense, AveragePooling2D
 from keras.models import Model
@@ -626,7 +807,7 @@ def create_custom_resnet(inputs, model_name,start_layer=-1,freeze=False, dynamic
     avgpoolname = model_name + "_GlobalAvgPool"
     #avgpool = GlobalAveragePooling2D(kernel_size=(2,2),name=avgpoolname)(x)
     densename = model_name + "_Dense1024softmax"
-    dense = Dense(units=1024, activation='softmax')(avgpool)
+    dense = Dense(units=1024, activation='relu')(avgpool)
     model = Model(inputs=inputs, outputs=dense,name=model_name)
 
     if start_layer != -1:
@@ -788,7 +969,7 @@ def create_early_model(models,inputs,ftype,block):
     else: print('Choose from B0 to B3 please!')
 
     avgpool = Lambda(lambda x: K.mean(x, axis=(1, 2), keepdims=False))(b3)
-    dense1024 = Dense(units=1024, activation='softmax')(avgpool)
+    dense1024 = Dense(units=1024, activation='relu')(avgpool) # softmax - relu?
 
     x = Dropout(0.5)(dense1024)
     outputs = Dense(units=1, activation='sigmoid')(x)
@@ -797,17 +978,63 @@ def create_early_model(models,inputs,ftype,block):
 
     return model_multi
 
+
+print("##################################################################")
+#learning_rate = 0.001
+opt = keras.optimizers.Adam(learning_rate=learning_rate) #, clipnorm=1.)
+
+print("\n #####################   SINGLE VIEW MODEL   #######################")
+
 inputs = Input(shape=input_shape)
 base_cnn = create_custom_resnet(inputs,'BaseCNN')
 single_view_model = create_single_model(base_cnn)
 
-single_view_model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+single_view_model.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
 #single_view_model.summary()
-single_view_model.fit(filtered_data, filtered_labels, epochs=num_epochs, batch_size=batch_size,validation_data=(filtered_test_data,filtered_test_labels))
+single_history = single_view_model.fit(filtered_data, filtered_labels, epochs=num_epochs, batch_size=batch_size,validation_data=(filtered_test_data,filtered_test_labels))
+
+str_batch_size = '{}'.format(batch_size)
+str_rate = '{}'.format(rate*100)
+str_reg = '{}'.format(reg)
+str_num_epochs = '{}'.format(num_epochs)
+str_thr = '{}'.format(sum_threshold)
+str_cnz = '{}'.format(cut_nonzero)
+str_transfer = '{}'.format(transfer)
+str_base = '{}'.format(base)
+str_norm = '{}'.format(normalize)
+
+name_str = fnr + "_" + fusiontype + "_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + str_reg + "reg_" + str_transfer + "transfer_" + str_norm + "_" + formatted_datetime 
+name_single_str =  fnr + "_singleviewCNN_" + fusiontype + "_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + str_reg + "reg_" + str_transfer + "transfer_" + str_norm + "_" + formatted_datetime 
 
 #base_cnn_weights = single_view_model.get_layer('max_pooling2d_6').get_weights()
 
+# Create plots for quick overview
+fig, ax = plt.subplots(1,2, figsize = (9,3))
+ax[0].plot(single_history.history['accuracy'], label='Training Data',lw=2,c="darkorange")
+ax[0].plot(single_history.history['val_accuracy'], label = 'Validation Data',lw=2,c="firebrick")
+ax[0].set_xlabel('Epoch')
+ax[0].set_ylabel('Accuracy')
+ax[0].set_ylim([0.5, 1])
+ax[0].legend(loc='lower right')
+
+ax[1].plot(single_history.history['loss'],lw=2,c="darkorange")
+ax[1].plot(single_history.history['val_loss'],lw=2,c="firebrick")
+ax[1].set_ylabel('Loss')
+ax[1].set_xlabel('Epoch')
+
+print("Single Image created")
+
+
+filenamesingle_savefig = "Images/Test_Cluster_" + name_single_str + ".png"
+fig.savefig(filenamesingle_savefig, bbox_inches='tight')
+
+print("Single Image saved")
+
 single_view_model.save_weights('single_cnn_weights_partial.h5')
+
+
+
+print("\n #####################   MULTI VIEW MODEL   #########################")
 
 if transfer == 'yes':
     input_1 = Input(shape=input_shape)
@@ -857,22 +1084,12 @@ elif fusiontype == "earlyconvB3":
     model_multi = create_early_model([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4],"earlyconv","B3")
 else: print("Early Fusion not yet working! Choose latefc or latemax!")
 
-model_multi.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+model_multi.compile(optimizer=opt, loss='binary_crossentropy', metrics=['accuracy'])
 #model_multi.summary()
 
-early_stopping_callback_1=tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=patience,verbose=1,mode='min')
+early_stopping_callback_1=tf.keras.callbacks.EarlyStopping(monitor='val_loss',patience=patience,verbose=0,mode='min')
 history = model_multi.fit([train_data[:,i,:,:] for i in range(4)],train_labels,epochs=num_epochs,batch_size=batch_size,validation_data=([test_data[:,i,:,:] for i in range(4)], test_labels), callbacks=[early_stopping_callback_1])
-
-str_batch_size = '{}'.format(batch_size)
-str_rate = '{}'.format(rate*100)
-str_reg = '{}'.format(reg)
-str_num_epochs = '{}'.format(num_epochs)
-str_thr = '{}'.format(sum_threshold)
-str_cnz = '{}'.format(cut_nonzero)
-str_transfer = '{}'.format(transfer)
-str_base = '{}'.format(base)
-
-name_str = fnr + "_" + fusiontype + "_" + normalize + "_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "rate" + str_reg + "reg" + str_thr + "threshold" + str_cnz + "nonzerocut" + "_" + str_transfer + "transfer_" + str_base + "basemodel_" + formatted_datetime 
 
 print("... Finished the Fitting")
 
@@ -884,23 +1101,23 @@ with open(history_name, 'wb') as file:
     pickle.dump(history.history, file)
 
 # Create plots for quick overview
-fig, ax = plt.subplots(1,2, figsize = (9,3))
-ax[0].plot(history.history['accuracy'], label='Training Data',lw=2,c="darkorange")
-ax[0].plot(history.history['val_accuracy'], label = 'Validation Data',lw=2,c="firebrick")
-ax[0].set_xlabel('Epoch')
-ax[0].set_ylabel('Accuracy')
-ax[0].set_ylim([0.5, 1])
-ax[0].legend(loc='lower right')
+fig1, ax1 = plt.subplots(1,2, figsize = (9,3))
+ax1[0].plot(history.history['accuracy'], label='Training Data',lw=2,c="darkorange")
+ax1[0].plot(history.history['val_accuracy'], label = 'Validation Data',lw=2,c="firebrick")
+ax1[0].set_xlabel('Epoch')
+ax1[0].set_ylabel('Accuracy')
+ax1[0].set_ylim([0.5, 1])
+ax1[0].legend(loc='lower right')
 
-ax[1].plot(history.history['loss'],lw=2,c="darkorange")
-ax[1].plot(history.history['val_loss'],lw=2,c="firebrick")
-ax[1].set_ylabel('Loss')
-ax[1].set_xlabel('Epoch')
+ax1[1].plot(history.history['loss'],lw=2,c="darkorange")
+ax1[1].plot(history.history['val_loss'],lw=2,c="firebrick")
+ax1[1].set_ylabel('Loss')
+ax1[1].set_xlabel('Epoch')
 
 print("Image created")
 
 
 filename_savefig = "Images/Test_Cluster_" + name_str + ".png"
-fig.savefig(filename_savefig, bbox_inches='tight')
+fig1.savefig(filename_savefig, bbox_inches='tight')
 
 print("Image saved")
