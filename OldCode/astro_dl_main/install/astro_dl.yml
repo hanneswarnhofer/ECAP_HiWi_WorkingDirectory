@@ -1,0 +1,26 @@
+name: astro_dl
+channels:
+- pytorch
+- nvidia
+- defaults
+- conda-forge
+dependencies:
+- conda=22.9.0
+- python=3.9
+- conda-env
+- conda-build
+- conda-verify
+- _ipyw_jlab_nb_ext_conf
+- anaconda==2022.10=py39_0
+- anaconda-navigator
+- navigator-updater
+- cudatoolkit=11.3
+- cudnn=8.2.1
+- cuda-nvcc
+- torchvision=0.13.1
+- torchaudio=0.12.1
+- pytorch==1.12.1=py3.9_cuda11.3_cudnn8.3.2_0
+- pip=22.2.2
+- git
+- pip:
+  - -r requirements_pip.txt

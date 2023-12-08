@@ -1,0 +1,22 @@
+name: astro_dl
+channels:
+- pytorch
+- defaults
+- conda-forge
+dependencies:
+- conda=22.9.0
+- python=3.9
+- conda-env
+- conda-build
+- conda-verify
+- _ipyw_jlab_nb_ext_conf
+- anaconda==2022.10=py39_0
+- anaconda-navigator
+- navigator-updater
+- torchaudio=0.12.1
+- torchvision=0.13.1
+- pytorch==1.12.1=py3.9_cpu_0
+- pip=22.2.2
+- git
+- pip:
+  - -r requirements_pip.txt

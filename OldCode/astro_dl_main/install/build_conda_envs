@@ -1,0 +1,31 @@
+# ###
+# Build astro_dl with CUDA/GPU support
+# ###
+
+docker build -f docker/docker_astro_dl -t astro_dl_docker .  --no-cache
+docker create -ti --name dummy astro_dl_docker bash
+docker cp dummy:env.yml ./astro_dl_this_image.yml
+
+rm astro_dl.yml
+docker rm dummy
+sed '/prefix/d' ./astro_dl_this_image.yml >> astro_dl.yml
+
+
+rm astro_dl_this_image.yml
+
+
+# ###
+# Build astro_dl with CPU-only support
+# ###
+
+docker build -f docker/docker_astro_dl_nocuda -t astro_dl_docker_nocuda . --no-cache
+docker create -ti --name dummy_nocuda astro_dl_docker_nocuda bash
+docker cp dummy_nocuda:env.yml ./astro_dl_nocuda_this_image.yml
+
+rm astro_dl_nocuda.yml
+docker rm dummy_nocuda
+sed '/prefix/d' ./astro_dl_nocuda_this_image.yml >> astro_dl_nocuda.yml
+
+rm astro_dl_nocuda_this_image.yml
+
+docker container prune -f

@@ -1,0 +1,62 @@
+default:
+  before_script:
+    - pip install --cache-dir=.pip -r install/requirements_pip.txt
+    - conda install --file install/requirements_conda.txt
+    - export PYTHONPATH=$PWD:$PYTHONPATH
+
+build_cuda:
+  image: continuumio/anaconda3
+  before_script:
+    - ''
+  script:
+    - conda update -n base -c defaults conda
+    - conda env list
+    - python -c 'import sys; print(sys.version)'
+    - echo " - - - - - - - - - - - begin installation - - - - - - - - - - - "
+    - apt-get update
+    - apt-get install libxml2 -y
+    - conda init bash
+    - source ~/.bashrc
+    - conda env create -f install/astro_dl.yml
+#    - conda activate astro_dl
+#    - conda env update --file install/astro_dl.yml --prune
+    - conda env list
+    - echo "- - - - - - - - - - - Building of the image finished, verify.... - - - - - - - - - - - "
+    - conda activate astro_dl
+    - python3 -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
+#    - python3 -c "import tensorflow as tf
+#if len(tf.config.list_physical_devices('GPU'))==0: raise NotImplementedError()"
+    - python3 -c "import torch; print(torch.cuda.is_available())"
+#    - python3 -c "import torch
+#if torch.cuda.is_available() is False: raise NotImplementedError()"
+    - python3 -c "import torch_geometric; print(torch_geometric.__version__)"
+
+
+# build:
+#   image: continuumio/anaconda3
+#   before_script:
+#     - ''
+#   script:
+#     - conda update -n base -c defaults conda
+#     - conda env list
+#     - python -c 'import sys; print(sys.version)'
+#     - echo " - - - - - - - - - - - begin installation - - - - - - - - - - - "
+#     - conda create --name astro_dl_nocuda
+#     - conda init bash
+#     - source ~/.bashrc
+#     - conda activate astro_dl_nocuda
+#     - conda env update --file install/astro_dl_nocuda.yml --prune
+#     - conda env list
+#     - echo "- - - - - - - - - - - Building of the image finished, verify.... - - - - - - - - - - - "
+#     - python3 -c "import tensorflow as tf; print(tf.config.list_physical_devices('GPU'))"
+#     - python3 -c "import torch_geometric; print(torch_geometric.__version__)"
+#     - python3 -c "import torch; print(torch.cuda.is_available())"
+
+code_quality:
+  image: continuumio/anaconda3
+  before_script:
+    - pip install --cache-dir=.pip flake8
+  script:
+    - python -c 'import sys; print(sys.version)'
+    - flake8 .
+    - echo "- - - - - - - - - - - Finished pyflakes - - - - - - - - - - - "

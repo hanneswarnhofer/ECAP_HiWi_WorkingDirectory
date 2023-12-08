@@ -752,8 +752,6 @@ def create_base_model(inputs,freeze=False):
     
     return model
 
-    
-
 def create_single_model(model):
     single_rate = 0.5
     inputs = model.input

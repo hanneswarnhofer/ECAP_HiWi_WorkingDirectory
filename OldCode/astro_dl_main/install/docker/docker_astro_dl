@@ -1,0 +1,31 @@
+FROM continuumio/anaconda3
+
+COPY requirements_conda.txt home/
+COPY requirements_pip.txt home/
+COPY exporter.py home/
+
+RUN apt-get update
+RUN python -c 'import sys; print(sys.version)'
+RUN apt-get install libxml2 -y
+
+# RUN conda update -n base -c defaults conda
+RUN conda install --file home/requirements_conda.txt
+# For tensorflow and torch install cuda and for tensorflow install cudnn
+RUN conda install -c conda-forge cudatoolkit=11.3 cudnn=8.2.1
+# Needed to remove tensorflow warning
+RUN conda install -c nvidia cuda-nvcc
+
+RUN conda env config vars set LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_PREFIX/lib
+
+# Install torch with specific cudnn version included
+RUN conda install pytorch=1.12.1=py3.9_cuda11.3_cudnn8.3.2_0 torchvision torchaudio -c pytorch
+
+# export conda env
+RUN python home/exporter.py
+
+RUN pip install -r home/requirements_pip.txt
+
+#RUN conda init bash \
+#    && . ~/.bashrc \
+#    && conda activate astro_dl \
+#    && pip install -r home/requirements_pip.txt

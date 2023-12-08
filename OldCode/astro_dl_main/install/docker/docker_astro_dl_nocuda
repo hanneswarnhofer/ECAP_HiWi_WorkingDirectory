@@ -1,0 +1,22 @@
+FROM continuumio/anaconda3
+
+COPY requirements_conda.txt home/
+COPY requirements_pip_nocuda.txt home/
+COPY exporter.py home/
+
+RUN python -c 'import sys; print(sys.version)'
+
+# RUN conda update -n base -c defaults conda
+RUN conda install --file home/requirements_conda.txt
+RUN pip install tensorflow==2.9.1
+RUN conda install pytorch=1.12.1=py3.9_cpu_0 torchvision torchaudio -c pytorch
+
+# export conda env
+RUN python home/exporter.py --cuda False
+
+RUN pip install -r home/requirements_pip_nocuda.txt
+
+#RUN conda init bash \
+#    && . ~/.bashrc \
+#    && conda activate astro_dl \
+#    && pip install -r home/requirements_pip.txt

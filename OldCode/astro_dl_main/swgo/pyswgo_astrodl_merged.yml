@@ -1,0 +1,59 @@
+channels:
+- conda-forge
+- pytorch
+- nvidia
+- defaults
+dependencies:
+- _ipyw_jlab_nb_ext_conf
+- anaconda
+- anaconda-navigator
+- astropy
+- black
+- conda
+- conda-build
+- conda-env
+- conda-verify
+- cuda-nvcc
+- cudatoolkit=11.3
+- cudnn=8.2.1
+- cycler
+- flake8
+- gammapy=0.20.0
+- git
+- h5py
+- joblib
+- jupyterlab
+- make
+- matplotlib
+- navigator-updater
+- networkx
+- numpy
+- numpydoc
+- pandas
+- pip
+- psutil
+- pydata-sphinx-theme
+- pyflakes
+- pytables
+- pytest
+- pytest-cov
+- python
+- python=3.9
+- pytorch==1.12.1=py3.9_cuda11.3_cudnn8.3.2_0
+- scikit-learn
+- scipy
+- sphinx
+- sphinx-automodapi
+- torchaudio=0.12.1
+- torchvision=0.13.1
+- tqdm
+- traitlets~=5.0,>=5.0.5
+- uproot
+- utm
+- xmltodict
+- pip:
+  - -r requirements_pip.txt
+  - git+https://github.com/jimbraun/XCDF.git
+  - pytest-console-scripts
+  - sphinxcontrib-autoprogram
+name: pyswgo

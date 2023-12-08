@@ -1,0 +1,6 @@
+h5py
+astropy
+matplotlib
+flake8
+pytest
+networkx
