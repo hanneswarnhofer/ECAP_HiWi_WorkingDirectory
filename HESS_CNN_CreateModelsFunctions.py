@@ -85,7 +85,7 @@ def create_base_model_customresnet2(inputs,model_name,dropout_rate,filters_1,fil
 
     dropout = Dropout(dropout_rate)(avgpool)
     flat = Flatten()(dropout)
-    dense = Dense(units=filters_3, activation='relu')(flat) # try filters: 1024
+    dense = Dense(units=1024, activation='relu')(flat) # try filters: 1024
     model = Model(inputs=inputs, outputs=dense,name=model_name)
 
     if freeze:
@@ -249,8 +249,9 @@ def create_single_model(model):
     #print_layer_dimensions(model_single)
     return model_single
 
-def create_latefc_model(models,inputs):
+def create_latefc_model(models,inputs,filters_3):
     fusionlayer = concatenate([model.output for model in models])
+    fusionlayer = Dense(units=1024,activation='relu')(fusionlayer)
     x = Dropout(0.5)(fusionlayer)
     #x = Flatten(x)
     outputs = Dense(units=1, activation='sigmoid')(x)

@@ -102,9 +102,6 @@ class DataManager():
     def make_mc_data(self):
         return self.extract_info("simulation/event/subarray/shower")
 
-
-
-
 def re_index_ct14(image):
     return image[5:, :, :]
 
@@ -143,8 +140,13 @@ def rotate(pix_pos, rotation_angle=0):
     pixel_positions = np.squeeze(np.asarray(np.dot(rotation_matrix, pix_pos)))
     return pixel_positions
 
-def preprocess_data(train_data, train_labels, threshold=0.00001):
-    # Get the dimensions of the input data
+
+##########################################################################################
+##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##  ##
+##########################################################################################
+
+def generate_single_data(train_data, train_labels, threshold=60):
+    # Dimensions of the input data
     num_events, num_views, height, width, channels = train_data.shape
     
     # Reshape train_data into a single array with shape (num_events * num_views, height, width, channels)
@@ -160,12 +162,10 @@ def preprocess_data(train_data, train_labels, threshold=0.00001):
     
     # Filter the reshaped data based on valid_indices
     filtered_data = reshaped_data[valid_indices]
-    
     # Reshape train_labels to match the reshaped data
     filtered_labels = reshaped_labels[valid_indices]
 
     combined_data_labels = list(zip(filtered_data, filtered_labels))
-
     # Shuffle the combined array
     np.random.shuffle(combined_data_labels)
 
@@ -176,79 +176,57 @@ def preprocess_data(train_data, train_labels, threshold=0.00001):
     shuffled_data = np.array(shuffled_data)
     shuffled_labels = np.array(shuffled_labels)
 
-
-
     return shuffled_data, shuffled_labels
 
-
-
 def plot_image_2by2(train_data,event_nr,labels,string,dt):
-
-    
-
-    
-
     print("Plotting Example Event. Event Nr: ", event_nr)
 
-    image1 = train_data[:,0,:,:] 
-    image2 = train_data[:,1,:,:] 
-    image3 = train_data[:,2,:,:] 
-    image4 = train_data[:,3,:,:] 
+    if (string == 'single train' or string == 'single test'): # Choosing four different images (single view data is shuffled before)
+        image1 = train_data
+        pltimage1 = image1[event_nr]
+        pltimage2 = image1[event_nr+1]
+        pltimage3 = image1[event_nr+2]
+        pltimage4 = image1[event_nr+3]
 
-    pltimage1 = image1[event_nr]
-    pltimage2 = image2[event_nr]
-    pltimage3 = image3[event_nr]
-    pltimage4 = image4[event_nr]
+        label1 = labels[event_nr].ravel()
+        label2 = labels[event_nr+2].ravel()
+        label3 = labels[event_nr+3].ravel()
+        label4 = labels[event_nr+4].ravel()
 
-    fig, ax = plt.subplots(2,2)
-
-    im1 = ax[0,0].imshow(pltimage1[:,:,0], cmap='viridis',vmin=0)
-    im2 = ax[0,1].imshow(pltimage2[:,:,0], cmap='viridis',vmin=0)
-    im3 = ax[1,0].imshow(pltimage3[:,:,0], cmap='viridis',vmin=0)
-    im4 = ax[1,1].imshow(pltimage4[:,:,0], cmap='viridis',vmin=0)
-
-    cbar1 = fig.colorbar(im1, ax=ax[0, 0], orientation='vertical')
-    cbar2 = fig.colorbar(im2, ax=ax[0, 1], orientation='vertical')
-    cbar3 = fig.colorbar(im3, ax=ax[1, 0], orientation='vertical')
-    cbar4 = fig.colorbar(im4, ax=ax[1, 1], orientation='vertical')
-
-
-    label = labels[event_nr].ravel()
-
-
-    if label == 1: str_label = "Gamma" 
-    elif label == 0: str_label = "Proton" 
-    else: str_label = "Unknown"
-
-    ax[0, 0].text(0.05, 0.95, str_label, transform=ax[0, 0].transAxes, color='white', fontsize=12, ha='left', va='top', bbox=dict(facecolor='black', alpha=0.7))
-    ax[0, 1].text(0.05, 0.95, str_label, transform=ax[0, 1].transAxes, color='white', fontsize=12, ha='left', va='top', bbox=dict(facecolor='black', alpha=0.7))
-    ax[1, 0].text(0.05, 0.95, str_label, transform=ax[1, 0].transAxes, color='white', fontsize=12, ha='left', va='top', bbox=dict(facecolor='black', alpha=0.7))
-    ax[1, 1].text(0.05, 0.95, str_label, transform=ax[1, 1].transAxes, color='white', fontsize=12, ha='left', va='top', bbox=dict(facecolor='black', alpha=0.7))
-    fig.suptitle(string,fontsize=15)
-    plt.show()
-    time.sleep(3)
-    plt.close()
-
-    print("Min. and Max. Value for Image 1: ", np.min(pltimage1), " - " , np.max(pltimage1) , ". Sum: ", np.sum(pltimage1))
-    print("Min. and Max. Value for Image 2: ", np.min(pltimage2), " - " , np.max(pltimage2), ". Sum: ", np.sum(pltimage2))
-    print("Min. and Max. Value for Image 3: ", np.min(pltimage3), " - " , np.max(pltimage3), ". Sum: ", np.sum(pltimage3))
-    print("Min. and Max. Value for Image 4: ", np.min(pltimage4), " - " , np.max(pltimage4), ". Sum: ", np.sum(pltimage4))
-
-    str_evnr = '{}'.format(event_nr)
-    name = "Test_images/Test_figure_evnr_" + str_evnr + "_" + string + "_" + dt + ".png"
-    #fig.savefig(name)#
-
-def plot_single_image_2by2(train_data,event_nr,labels,string,dt):
+        if label1 == 1: str_label1 = "Gamma" 
+        elif label1 == 0: str_label1 = "Proton" 
+        else: str_label1 = "Unknown"
+        if label2 == 1: str_label2 = "Gamma" 
+        elif label2 == 0: str_label2 = "Proton" 
+        else: str_label2 = "Unknown"
+        if label3 == 1: str_label3 = "Gamma" 
+        elif label3 == 0: str_label3 = "Proton" 
+        else: str_label3 = "Unknown"
+        if label4 == 1: str_label4 = "Gamma" 
+        elif label4 == 0: str_label4 = "Proton" 
+        else: str_label4 = "Unknown"
     
-    print("Plotting Example Single Images. Event Nr: ", event_nr , " to " , (event_nr+3))
+    elif (string == 'train' or string=='test' or string == 'mapped'):
+        image1 = train_data[:,0,:,:] 
+        image2 = train_data[:,1,:,:] 
+        image3 = train_data[:,2,:,:] 
+        image4 = train_data[:,3,:,:] 
 
-    image1 = train_data
+        pltimage1 = image1[event_nr]
+        pltimage2 = image2[event_nr]
+        pltimage3 = image3[event_nr]
+        pltimage4 = image4[event_nr]
 
+        label = labels[event_nr].ravel()
 
-    pltimage1 = image1[event_nr]
-    pltimage2 = image1[event_nr+1]
-    pltimage3 = image1[event_nr+2]
-    pltimage4 = image1[event_nr+3]
+        if label == 1: str_label1 = "Gamma" 
+        elif label == 0: str_label1 = "Proton" 
+        else: str_label1 = "Unknown"
+
+        str_label2 = str_label1
+        str_label3 = str_label1
+        str_label4 = str_label1
+    else: print("Unknown string specified during plotting, don't know what to do here.")
 
     fig, ax = plt.subplots(2,2)
 
@@ -260,26 +238,7 @@ def plot_single_image_2by2(train_data,event_nr,labels,string,dt):
     cbar1 = fig.colorbar(im1, ax=ax[0, 0], orientation='vertical')
     cbar2 = fig.colorbar(im2, ax=ax[0, 1], orientation='vertical')
     cbar3 = fig.colorbar(im3, ax=ax[1, 0], orientation='vertical')
-    cbar4 = fig.colorbar(im4, ax=ax[1, 1], orientation='vertical')
-
-
-    label1 = labels[event_nr].ravel()
-    label2 = labels[event_nr+2].ravel()
-    label3 = labels[event_nr+3].ravel()
-    label4 = labels[event_nr+4].ravel()
-
-    if label1 == 1: str_label1 = "Gamma" 
-    elif label1 == 0: str_label1 = "Proton" 
-    else: str_label1 = "Unknown"
-    if label2 == 1: str_label2 = "Gamma" 
-    elif label2 == 0: str_label2 = "Proton" 
-    else: str_label2 = "Unknown"
-    if label3 == 1: str_label3 = "Gamma" 
-    elif label3 == 0: str_label3 = "Proton" 
-    else: str_label3 = "Unknown"
-    if label4 == 1: str_label4 = "Gamma" 
-    elif label4 == 0: str_label4 = "Proton" 
-    else: str_label4 = "Unknown"
+    cbar4 = fig.colorbar(im4, ax=ax[1, 1], orientation='vertical')    
 
     ax[0, 0].text(0.05, 0.95, str_label1, transform=ax[0, 0].transAxes, color='white', fontsize=12, ha='left', va='top', bbox=dict(facecolor='black', alpha=0.7))
     ax[0, 1].text(0.05, 0.95, str_label2, transform=ax[0, 1].transAxes, color='white', fontsize=12, ha='left', va='top', bbox=dict(facecolor='black', alpha=0.7))
@@ -299,15 +258,28 @@ def plot_single_image_2by2(train_data,event_nr,labels,string,dt):
     name = "Test_images/Test_figure_evnr_" + str_evnr + "_" + string + "_" + dt + ".png"
     #fig.savefig(name)
 
+    return im1, im2, im3, im4
+
+def plot_random_images(data, labels, label_str, dt):
+    randnum = np.random.randint(0, np.shape(data)[0])
+    print(f"{label_str} {randnum}: Image plotted!")
+    splitstring = label_str.split()
+    string = splitstring[0].lower()
+    plot_image_2by2(data, randnum, labels, string=string, dt=dt)
+
+def plot_single_images(data, labels, label_str, dt):
+    randnum = np.random.randint(0, np.shape(data)[0] - 4) 
+    print(f"Single {label_str} {randnum}: Image plotted!")
+    splitstring = label_str.split()
+    string = 'single ' + splitstring[0].lower()
+    plot_image_2by2(data, randnum, labels, string=string, dt=dt)
+
 def handle_nan(data,labels):
     # Check for NaN values
     nan_mask = np.isnan(data)
-        # Check if any image in an event has NaN values
     nan_event_mask = np.any(np.any(np.any(nan_mask, axis=-1), axis=-1), axis=-1)
 
-    # Get indices of events to be removed
     events_to_remove = np.where(nan_event_mask)[0]
-
     # Remove events from data and labels
     data = np.delete(data, events_to_remove, axis=0)
     labels = np.delete(labels, events_to_remove, axis=0)
@@ -320,211 +292,91 @@ def handle_nan(data,labels):
     print(f"Total NaN entries: {total_nan_entries}")
     print(f"Percentage of NaN entries: {nan_percentage:.6f}%")
     
-    # Set NaN entries to zero
-    #data[nan_mask] = 0.0
-    
     return data , labels
 
-def handle_inf(data):
-    # Check for NaN values
-    nan_mask = np.isinf(data)
-    
-    # Calculate total count and percentage of NaN entries
-    total_nan_entries = np.sum(nan_mask)
-    total_entries = np.size(data)
-    nan_percentage = (total_nan_entries / total_entries) * 100.0
-    
-    print(f"Total inf entries: {total_nan_entries}")
-    print(f"Percentage of inf entries: {nan_percentage:.6f}%")
-    
-    # Set NaN entries to zero
-    #data[nan_mask] = 0.0
-    
-    return data
-
 def print_event_composition(labels, event_types=('proton', 'gamma')):
-    """
-    Print the composition of events in the given array.
-
-    Parameters:
-    - labels: numpy array of shape (num_events, 1) containing 1s or 0s.
-    - event_types: Tuple of strings representing the event types.
-
-    Example:
-    >>> labels = np.array([[1], [0], [1], [1], [0], [0]])
-    >>> print_event_composition(labels, event_types=('proton', 'gamma'))
-    """
-
     if labels.shape[1] != 1:
         raise ValueError("The input array should have shape (num_events, 1)")
 
     event_counts = {event_types[0]: np.sum(labels == 0), event_types[1]: np.sum(labels == 1)}
-
     print("Event Composition:")
     for event_type, count in event_counts.items():
         print(f"{count} '{event_type}' events")
 
-        
-def load_map_data(num_events,location,sum_threshold,cut_nonzero,plot,formatted_datetime):
-    amount = int(num_events * 2)
 
-    if location == 'local':
-        filePath_gamma="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5"
-        filePath_proton="../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"
-    elif location == 'alex':    
-        filePath_gamma = "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5"
-        filePath_proton="../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"
-    else: print("Wrong location specified!")
+def load_telescope_data(file_path,amount,label_value):
+    dm = DataManager(file_path)
+    f = dm.get_h5_file()
+    data = [f[f"dl1/event/telescope/images/tel_{i:03d}"][0:amount] for i in range(1,5)]
 
-    dm_gamma = DataManager(filePath_gamma)
-    f_g = dm_gamma.get_h5_file()
+    shape, = np.shape(data[0])
+    print("Shape: ",shape)
+    if label_value == 1: labels = np.ones_like(range(shape))
+    elif label_value == 0: labels = np.zeros_like(range(shape))
+    else: print("Invalid label_value! Must be 0 or 1!")
 
-    if num_events >= len(f_g["dl1/event/telescope/images/tel_001"][:]) : num_events = len(f_g["dl1/event/telescope/images/tel_001"][:]) - 2
-    if amount >= len(f_g["dl1/event/telescope/images/tel_001"][:]) : amount = len(f_g["dl1/event/telescope/images/tel_001"][:]) - 1
+    return data , labels
 
-    tel1g_raw = f_g["dl1/event/telescope/images/tel_001"][0:amount]
-    tel2g_raw = f_g["dl1/event/telescope/images/tel_002"][0:amount]
-    tel3g_raw = f_g["dl1/event/telescope/images/tel_003"][0:amount]
-    tel4g_raw = f_g["dl1/event/telescope/images/tel_004"][0:amount]
-    #tel5g_raw = f_g["dl1/event/telescope/images/tel_005"][0:amount]
+def dataloader(num_events, location):
+    # Configure FilePaths:
+    file_paths = {
+        'local': 
+            {'gamma': "../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5",
+            'proton': "../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"},
+        'alex': 
+            {'gamma': "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5",
+            'proton': "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"}}
+    
+    gamma_data, gamma_labels = load_telescope_data(file_paths[location]['gamma'], num_events * 2, label_value=1)
+    print("Loaded gamma data")
+    proton_data, proton_labels = load_telescope_data(file_paths[location]['proton'], num_events * 2, label_value=0)
+    print("Loaded proton data")
 
-    print("Successfully opened gamma data!")
+    # Concatenate data and labels
+    tel_data = [np.concatenate((gamma_data[i], proton_data[i]), axis=0) for i in range(4)]
+    labels = np.concatenate([gamma_labels, proton_labels], axis=0)
 
-    labelsg = np.stack([data[2] for data in tel1g_raw])
-    labelsg_ones = np.ones_like(labelsg)
+    print("Shape 'tel_data': ", np.shape(tel_data))
+    print("Shape 'labels': ",np.shape(labels))
 
-    f_g.close()
+    return tel_data , labels
 
-    dm_proton = DataManager(filePath_proton)
-    f_p = dm_proton.get_h5_file()
-
-    tel1p_raw = f_p["dl1/event/telescope/images/tel_001"][0:amount]
-    tel2p_raw = f_p["dl1/event/telescope/images/tel_002"][0:amount]
-    tel3p_raw = f_p["dl1/event/telescope/images/tel_003"][0:amount]
-    tel4p_raw = f_p["dl1/event/telescope/images/tel_004"][0:amount]
-    #tel5p_raw = f_p["dl1/event/telescope/images/tel_005"][0:amount]
-
-    print("Successfully opened proton data!")
-
-    labelsp = np.stack([data[2] for data in tel1p_raw])
-    labelsp_zeros = np.zeros_like(labelsp)
-
-    tel1 = np.concatenate((tel1g_raw,tel1p_raw),axis=0)
-    tel2 = np.concatenate((tel2g_raw,tel2p_raw),axis=0)
-    tel3 = np.concatenate((tel3g_raw,tel3p_raw),axis=0)
-    tel4 = np.concatenate((tel4g_raw,tel4p_raw),axis=0)
-    #tel5 = np.concatenate((tel5g_raw,tel5p_raw),axis=0)
-    labels = np.concatenate((labelsg_ones,labelsp_zeros),axis=0)
-
-
-    if np.all(np.logical_or(labels == 0, labels == 1)):
-        print("The label array only consists of zeros and ones.")
-    else:
-        print("Attention: The label array contains values other than zeros and ones!!!")
-
-    del tel1g_raw
-    del tel2g_raw
-    del tel3g_raw
-    del tel4g_raw
-
-    del tel1p_raw
-    del tel2p_raw
-    del tel3p_raw
-    del tel4p_raw
-
-    f_p.close()
-
-    del labelsp
-    del labelsg
-    del labelsp_zeros
-    del labelsg_ones
-
-    print("Shape of Tel1: ",np.shape(tel1))
-    print("Shape of Tel2: ",np.shape(tel2))
-    print("Shape of Tel3: ",np.shape(tel3))
-    print("Shape of Tel4: ",np.shape(tel4))
-    #print("Shape of Tel5: ",np.shape(tel5))
-    print("Shape of Labels: ",np.shape(labels))
-    print("Labels: ",labels)
-
-    geo_ct14, geo_ct5 = make_hess_geometry()
-    print(os.getcwd())
+def datamapper(data,labels,num_events,cut_nonzero,threshold_value):
+    # Mapping setup
+    geo_ct14, _ = make_hess_geometry()
     ct_14_mapper = ImageMapper(camera_types=["HESS-I"], pixel_positions={"HESS-I": rotate(geo_ct14.get_pix_pos())}, mapping_method={"HESS-I": "axial_addressing"})
-    #ct_5_mapper = ImageMapper(camera_types=["HESS-II"], pixel_positions={"HESS-II": rotate(geo_ct5.get_pix_pos())}, mapping_method={"HESS-II": "axial_addressing"})
-
-    '''
-    mapped_images_1 = np.empty((num_events, 41,41,1))
-    mapped_images_2 = np.empty((num_events, 41,41,1))
-    mapped_images_3 = np.empty((num_events, 41,41,1))
-    mapped_images_4 = np.empty((num_events, 41,41,1))
-    #mapped_images_4 = np.empty((num_events, 41,41,1))
-    mapped_labels = np.empty(num_events,dtype=int)
-    '''
+    #mapped_images = {i: [] for i in range(4)}
 
     mapped_images_1, mapped_images_2, mapped_images_3, mapped_images_4 = [], [], [], []
+    mapped_images = [mapped_images_1, mapped_images_2, mapped_images_3, mapped_images_4]
+    mapped_labels = []
+
     mapped_labels = []
     valid_events_count = 0
-
-    length = num_events
-    max_value = len(tel1)
-    random_list = np.random.randint(max_value, size=2*length)
-    image_nr = 0
-
-    print(random_list[0:10])
-
-    #cut_nonzero = 3
-    threshold_value = 1e-8  # Adjust this threshold value as needed
-
-    print("Start Mapping...")
-
+    
+    # Random sampling
+    random_list = np.random.randint(len(labels), size=2*num_events)
+    # Mapping loop
     for event_nr in random_list:
-
-        if image_nr >= (num_events -1):
+        if valid_events_count == num_events:
             break
-        if event_nr < len(labels):
-            image_1 = ct_14_mapper.map_image(tel1[event_nr][3][:, np.newaxis], 'HESS-I')
-            image_2 = ct_14_mapper.map_image(tel2[event_nr][3][:, np.newaxis], 'HESS-I')
-            image_3 = ct_14_mapper.map_image(tel3[event_nr][3][:, np.newaxis], 'HESS-I')   
-            image_4 = ct_14_mapper.map_image(tel4[event_nr][3][:, np.newaxis], 'HESS-I')
-            #image_5 = ct_5_mapper.map_image(tel5[event_nr][3][:, np.newaxis], 'HESS-II')   
 
-            image_1[image_1 < threshold_value] = 0
-            image_2[image_2 < threshold_value] = 0
-            image_3[image_3 < threshold_value] = 0
-            image_4[image_4 < threshold_value] = 0
+        images = [ct_14_mapper.map_image(data[i][event_nr][3][:, np.newaxis], 'HESS-I') for i in range(4)]
 
-            image_1[image_1.sum() < sum_threshold] = 0
-            image_2[image_2.sum() < sum_threshold] = 0
-            image_3[image_3.sum() < sum_threshold] = 0
-            image_4[image_4.sum() < sum_threshold] = 0
+        # If the sum over all pixels is lower than threshold, set all pixels to zero
+        for img in images: img[:] = np.where(img.sum() < threshold_value, 0, img)
 
-                # Set all pixels lower than the threshold value to zero
+        # Check non-zero count
+        non_zero_count = sum(1 for img in images if np.sum(img) > 0)
 
-
-            non_zero_count = sum(1 for img in [image_1, image_2, image_3, image_4] if np.sum(img) > 0)
-            if non_zero_count >= cut_nonzero:
-                #mapped_images_1[image_nr] = image_1
-                #mapped_images_2[image_nr] = image_2
-                #mapped_images_3[image_nr] = image_3
-                #mapped_images_4[image_nr] = image_4
-                #mapped_images_5[image_nr] = image_5
-                #mapped_labels[image_nr] = labels[event_nr]
-                #image_nr += 1
-                mapped_images_1.append(image_1)
-                mapped_images_2.append(image_2)
-                mapped_images_3.append(image_3)
-                mapped_images_4.append(image_4)
-                # Assuming labels array is defined and contains 0 or 1 for each event_nr
-                mapped_labels.append(labels[event_nr])
-                
-                # Increment the valid events counter
-                valid_events_count += 1
-
-
-            if valid_events_count == num_events:
-                break
-        else:
-            print(f"Warning: event_nr {event_nr} exceeds the valid range for labels.")
+        # Only use events with at least cut_nonzero usable images
+        if non_zero_count >= cut_nonzero:
+            mapped_images_1.append(images[0])
+            mapped_images_2.append(images[1])
+            mapped_images_3.append(images[2])
+            mapped_images_4.append(images[3])
+            mapped_labels.append(labels[event_nr])
+            valid_events_count += 1
 
     # Convert the lists to arrays
     mapped_images_1 = np.array(mapped_images_1)
@@ -535,192 +387,63 @@ def load_map_data(num_events,location,sum_threshold,cut_nonzero,plot,formatted_d
     print("... Finished Mapping")
     print("Mapped Label Selection: ",mapped_labels[-20:-10])
 
-
-
-    nan_mask_mapped_labels = np.isnan(mapped_labels)
-    if np.any(nan_mask_mapped_labels):
-        print("Warning: NaN values found in mapped_labels. Handle accordingly.")
-
-    mapped_images = np.array([mapped_images_1,mapped_images_2,mapped_images_3,mapped_images_4]) #mapped_images_5])
-    print("Shape of mapped_images_1: ",np.shape(mapped_images_1))
-    print("Shape of mapped_images: ",np.shape(mapped_images))
-
-
-
-    if np.all(np.logical_or(mapped_labels == 0, mapped_labels == 1)):
-        print("The mapped_labels array only consists of zeros and ones.")
-    else:
-        print("Attention: The mapped_labels array contains values other than zeros and ones!!!")
-
-    del tel1
-    del tel2
-    del tel3
-    del tel4
-    del labels
-
-    del mapped_images_1
-    del mapped_images_2
-    del mapped_images_3
-    del mapped_images_4
-
     # Reshape the final array, so it is present in the same way as MoDAII data
     mapped_images = np.transpose(mapped_images, (1, 0, 2, 3, 4))
-    #mapped_images = np.squeeze(mapped_images, axis=-1)
     mapped_labels = mapped_labels[:,np.newaxis]
 
-    print("New shape of mapped_images: ",np.shape(mapped_images))
-    print("New shape of mapped_labels: ",np.shape(mapped_labels))
+    return mapped_images , mapped_labels
 
-    mapped_labels_multishape = np.zeros_like(mapped_images)
+def data_splitter(mapped_images,mapped_labels,plot,formatted_datetime):
+    # Overview about the data array
+    print(f"{np.shape(mapped_images)[0]} events with 4 images each are available")
+    print("Shape of 'mapped_labels': ", np.shape(mapped_labels))
+    print("Shape of 'mapped_images': ", np.shape(mapped_images), "\n")
 
-
-    len_mapped = np.shape(mapped_images)[0]
-    print("Sanity Check: len_mapped: ",len_mapped)
-
-
-    if plot == 'yes':
-        randnum = np.random.randint(0,np.shape(mapped_images)[0])
-        print("Mapped Images Event ",randnum,": Image plotted!")
-        plot_image_2by2(mapped_images,randnum,mapped_labels,string="mapped",dt=formatted_datetime)
-        randnum = np.random.randint(0,np.shape(mapped_images)[0])
-        print("Mapped Images Event ",randnum,": Image plotted!")
-        plot_image_2by2(mapped_images,randnum,mapped_labels,string="mapped",dt=formatted_datetime)
-
-    return mapped_images,mapped_labels
-
-def split_traintest(mapped_images,mapped_labels,plot,normalize,formatted_datetime):
-# overview about the important data array for later usage
-    print(np.shape(mapped_images)[0], " events with 4 images each are available \n")
-    print("Shape of 'mapped_labels': ",np.shape(mapped_labels))
-    print("Shape of 'mapped_images': ",np.shape(mapped_images),"\n")
-
-    # split into random training data (80%) and test data (20%)
-    train_data = []
-    test_data = []
-    train_labels = []
-    test_labels = [] 
-
-    #data_dummy = mapped_images
-
+    # Split into random training data (80%) and test data (20%)
     random_selection = np.random.rand(np.shape(mapped_images)[0]) <= 0.8
 
-    #print("Mapped Labels:", mapped_labels)
-
-    train_data.append(mapped_images[random_selection])
-    test_data.append(mapped_images[~random_selection])
-    train_labels.append(mapped_labels[random_selection])
-    test_labels.append(mapped_labels[~random_selection])
-
-    #mapped_images = data_dummy
-    #del data_dummy
+    train_data = mapped_images[random_selection]
+    test_data = mapped_images[~random_selection]
+    train_labels = mapped_labels[random_selection]
+    test_labels = mapped_labels[~random_selection]
 
     print(random_selection[0:10])
 
-    # free some memory space
+    # Free memory
     del mapped_images
     del mapped_labels
-
-    # convert to numpy array and reshape 
-    train_data = np.array(train_data)
-    train_data = train_data.reshape(np.shape(train_data[0]))
-    test_data = np.array(test_data)
-    test_data = test_data.reshape(np.shape(test_data[0]))
-
-    train_labels = np.array(train_labels)
-    train_labels = train_labels.reshape(np.shape(train_labels[0]))
-    test_labels = np.array(test_labels)
-    test_labels = test_labels.reshape(np.shape(test_labels[0]))
 
     len_train = np.shape(train_data)[0]
     len_test = np.shape(test_data)[0]
 
-
-    train_labels_multishape = np.zeros_like(train_data)
-    test_labels_multishape = np.zeros_like(test_data)
-
-
-
-    #for i in range(0,len_train):
-    #    train_labels_multishape[i,:,:,:] = train_labels[i]
-
-    #for k in range(0,len_test):
-    #    test_labels_multishape[k,:,:,:] = test_labels[k]
-
-    # overvew about the splitting into training and test data
+    print(len_train)
+    print(len_test)
+    
+    # Overvew about the splitting into training and test data
     print("Split into Training and Test Data")
-    print("Train data shape:", np.shape(train_data) , "-->",round(100*len_train/(len_train+len_test),2),"%")
-    print("Test data shape:", np.shape(test_data), "-->",round(100*len_test/(len_train+len_test),2), "%")
+    print("Train data shape:", np.shape(train_data), "-->", round(100 * len_train / (len_train + len_test), 2), "%")
+    print("Test data shape:", np.shape(test_data), "-->", round(100 * len_test / (len_train + len_test), 2), "%")
     print("Train labels shape:", np.shape(train_labels))
     print("Test labels shape:", np.shape(test_labels))
 
-    train_data,train_labels = handle_nan(train_data,train_labels)
-    test_data,test_labels = handle_nan(test_data,test_labels)
-
-    print("Train data shape:", np.shape(train_data) , "-->",round(100*len_train/(len_train+len_test),2),"%")
-    print("Test data shape:", np.shape(test_data), "-->",round(100*len_test/(len_train+len_test),2), "%")
-    print("Train labels shape:", np.shape(train_labels))
-    print("Test labels shape:", np.shape(test_labels))
-
-    #train_data = handle_inf(train_data)
-    #test_data = handle_inf(test_data)
-
-    max_values_train = np.max(train_data, axis=(1, 2, 3, 4))
-    max_values_test = np.max(test_data, axis=(1, 2, 3, 4))
-
-    max_mask_train = max_values_train < 1.0
-    max_mask_test = max_values_test < 1.0
-
-    max_values_train[max_mask_train] = 1.0
-    max_values_test[max_mask_test] = 1.0
-
-
-
-    if normalize == "norm": 
-        train_data = train_data/ max_values_train[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
-        test_data = test_data/ max_values_test[:, np.newaxis, np.newaxis, np.newaxis, np.newaxis]
-        print("Data Normalized for each Event!")
-
-
-    filtered_data,filtered_labels = preprocess_data(train_data,train_labels)
-    filtered_test_data,filtered_test_labels = preprocess_data(test_data,test_labels)
-
-    print(np.shape(filtered_data))
-    print(np.shape(filtered_labels))
+    train_data, train_labels = handle_nan(train_data, train_labels)
+    test_data, test_labels = handle_nan(test_data, test_labels)
 
     print("Test Set:")
     print_event_composition(test_labels)
-
     print("\nTrain Set:")
     print_event_composition(train_labels)
 
+    single_train_data, single_train_labels = generate_single_data(train_data, train_labels)
+    single_test_data, single_test_labels = generate_single_data(test_data, test_labels)
+
+    print(np.shape(single_train_data))
+    print(np.shape(single_train_labels))
+
     if plot == 'yes':
+        plot_random_images(train_data, train_labels, "Train Data Event", formatted_datetime)
+        plot_random_images(test_data, test_labels, "Test Data Event", formatted_datetime)
+        plot_single_images(single_train_data, single_train_labels, "Train Data Event", formatted_datetime)
+        plot_single_images(single_test_data, single_test_labels, "Test Data Event", formatted_datetime)
 
-        randnum = np.random.randint(0,np.shape(train_data)[0])
-        print("Train Data Event ",randnum,": Image plotted!")
-        plot_image_2by2(train_data,randnum,train_labels,string="train",dt=formatted_datetime)
-        randnum = np.random.randint(0,np.shape(train_data)[0])
-        print("Train Data Event ",randnum,": Image plotted!")
-        plot_image_2by2(train_data,randnum,train_labels,string="train",dt=formatted_datetime)
-
-        randnum = np.random.randint(0,np.shape(test_data)[0])
-        print("Test Data Event ",randnum,": Image plotted!")
-        plot_image_2by2(test_data,randnum,test_labels,string="test",dt=formatted_datetime)
-        randnum = np.random.randint(0,np.shape(test_data)[0])
-        print("Test Data Event ",randnum,": Image plotted!")
-        plot_image_2by2(test_data,randnum,test_labels,string="test",dt=formatted_datetime)
-
-        randnum = np.random.randint(0,np.shape(filtered_data)[0]) - 4
-        print("Single Train Data Event ",randnum,": Image plotted!") 
-        plot_single_image_2by2(filtered_data,randnum,filtered_labels,string="trainsingle",dt=formatted_datetime)
-        randnum = np.random.randint(0,np.shape(filtered_data)[0]) - 4
-        print("Single Train Data Event ",randnum,": Image plotted!") 
-        plot_single_image_2by2(filtered_data,randnum,filtered_labels,string="trainsingle",dt=formatted_datetime)
-
-        randnum = np.random.randint(0,np.shape(filtered_test_data)[0]) - 4
-        print("Single Test Data Event ",randnum,": Image plotted!") 
-        plot_single_image_2by2(filtered_test_data,randnum,filtered_test_labels,string="testsingle",dt=formatted_datetime)
-        randnum = np.random.randint(0,np.shape(filtered_test_data)[0]) - 4
-        print("Single Test Data Event ",randnum,": Image plotted!") 
-        plot_single_image_2by2(filtered_test_data,randnum,filtered_test_labels,string="testsingle",dt=formatted_datetime)
-
-    return filtered_data, filtered_labels, filtered_test_data, filtered_test_labels, train_data, train_labels, test_data, test_labels
+    return single_train_data, single_train_labels, single_test_data, single_test_labels, train_data, train_labels, test_data, test_labels
