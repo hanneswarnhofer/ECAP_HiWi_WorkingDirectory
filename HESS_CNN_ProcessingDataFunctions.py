@@ -263,14 +263,14 @@ def plot_image_2by2(train_data,event_nr,labels,string,dt):
 
 def plot_random_images(data, labels, label_str, dt):
     randnum = np.random.randint(0, np.shape(data)[0])
-    print(f"{label_str} {randnum}: Image plotted!")
+    #print(f"{label_str} {randnum}: Image plotted!")
     splitstring = label_str.split()
     string = splitstring[0].lower()
     plot_image_2by2(data, randnum, labels, string=string, dt=dt)
 
 def plot_single_images(data, labels, label_str, dt):
     randnum = np.random.randint(0, np.shape(data)[0] - 4) 
-    print(f"Single {label_str} {randnum}: Image plotted!")
+    #print(f"Single {label_str} {randnum}: Image plotted!")
     splitstring = label_str.split()
     string = 'single ' + splitstring[0].lower()
     plot_image_2by2(data, randnum, labels, string=string, dt=dt)
@@ -507,7 +507,7 @@ def create_strings(fnr,formatted_datetime,batch_size,dropout_rate,reg,num_epochs
 
     return name_str, name_single_str
 
-def create_history_plot(history,name_str):
+def create_history_plot(history,name_str,base):
 
     history_name = "HistoryFiles/history_" + name_str + ".pkl"
     with open(history_name, 'wb') as file:
@@ -527,6 +527,8 @@ def create_history_plot(history,name_str):
     ax1[1].set_ylabel('Loss')
     ax1[1].set_xlabel('Epoch')
 
+    fig1.suptitle(base)
+
     print("Image created")
 
     filename_savefig = "Images/Test_Cluster_" + name_str + ".png"
@@ -537,5 +539,5 @@ def create_history_plot(history,name_str):
 def save_model(model,name_str,loc):
     if loc == 'local':
         model_name_str = "../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ModelFiles/modelfile_" +  name_str + ".h5"
-    else: model_name_str = "modelfile_" +  name_str + ".h5"
+    else: model_name_str = "ModelFiles/modelfile_" +  name_str + ".h5"
     model.save(model_name_str)

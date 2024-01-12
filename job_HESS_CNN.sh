@@ -16,11 +16,15 @@ module load tensorrt/8.5.3.1-cuda11.8-cudnn8.6
 
 micromamba activate dl1dh
 
-srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latefc' -base 'moda' -plt 'pdf'
-srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latemax' -base 'moda' -plt 'pdf'
 
-srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latefc' -base 'resnet' -plt 'pdf'
-srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latemax' -base 'resnet' -plt 'pdf'
+
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -ft 'latefc' -base 'resnet' -plt 'no'
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -ft 'latemax' -base 'resnet' -plt 'no'
+
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -ft 'latefc' -base 'moda' -plt 'no'
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -ft 'latemax' -base 'moda' -plt 'no'
+
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -base 'modamulti' -plt 'no' -single 'no'
 
 
 
