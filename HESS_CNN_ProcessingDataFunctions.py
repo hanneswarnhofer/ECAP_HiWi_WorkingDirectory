@@ -27,6 +27,7 @@ from ctapipe.instrument.camera import CameraGeometry
 
 from dl1_data_handler.reader import DL1DataReader
 from dl1_data_handler.image_mapper import ImageMapper
+from sklearn.metrics import roc_curve, auc
 
 class DataManager():
     """ Data class used to manage the HDF5 data files (simulations + Auger data).
@@ -341,17 +342,21 @@ def print_event_composition(labels, event_types=('proton', 'gamma')):
 def load_telescope_data(file_path,amount,label_value):
     dm = DataManager(file_path)
     f = dm.get_h5_file()
-    data = [f[f"dl1/event/telescope/images/tel_{i:03d}"][0:amount] for i in range(1,5)]
-
-    shape, = np.shape(data[0])
+    data = [f[f"dl1/event/telescope/images/tel_{i:03d}"] for i in range(1,5)]
+    length, = np.shape(data[0])
+    print("Events avaialable: ",length)
+    del data
+    amount = int(amount)
+    data_select = [f[f"dl1/event/telescope/images/tel_{i:03d}"][:amount] for i in range(1,5)]
+    shape, = np.shape(data_select[0])
     print("Shape: ",shape)
     if label_value == 1: labels = np.ones_like(range(shape))
     elif label_value == 0: labels = np.zeros_like(range(shape))
     else: print("Invalid label_value! Must be 0 or 1!")
 
-    return data , labels
+    return data_select , labels
 
-def dataloader(num_events, location):
+def dataloader(num_events, location,use_combined_data=False):
     # Configure FilePaths:
     file_paths = {
         'local': 
@@ -359,12 +364,35 @@ def dataloader(num_events, location):
             'proton': "../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ECAP_HiWi_WorkingDirectory/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"},
         'alex': 
             {'gamma': "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/gamma_diffuse_noZBDT_noLocDist_hybrid_v2.h5",
-            'proton': "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5"}}
-    
-    gamma_data, gamma_labels = load_telescope_data(file_paths[location]['gamma'], num_events * 2, label_value=1)
-    print("Loaded gamma data")
-    proton_data, proton_labels = load_telescope_data(file_paths[location]['proton'], num_events * 2, label_value=0)
-    print("Loaded proton data")
+            'proton': "../../../../wecapstor1/caph/mppi111h/new_sims/dnn/proton_noZBDT_noLocDist_hybrid_v2.h5",
+            'old_gamma': "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_gamma_diffuse_hybrid_preselect_20deg_0deg.h5",
+            'old_proton': "../../../../wecapstor1/caph/mppi111h/old_dataset/phase2d3_timeinfo_proton_hybrid_preselect_20deg_0deg.h5"}}
+
+
+    if use_combined_data and location == 'alex':
+        # Load half of the events from the old data and half from the new data
+        old_gamma_data, old_gamma_labels = load_telescope_data(file_paths['alex']['gamma'], num_events*0.35, label_value=1)
+        old_proton_data, old_proton_labels = load_telescope_data(file_paths['alex']['proton'], num_events*0.35, label_value=0)
+
+        new_gamma_data, new_gamma_labels = load_telescope_data(file_paths['alex']['old_gamma'], num_events*0.35, label_value=1)
+        new_proton_data, new_proton_labels = load_telescope_data(file_paths['alex']['old_proton'], num_events*0.35, label_value=0)
+
+        gamma_data = [np.concatenate((old_gamma_data[i], new_gamma_data[i]), axis=0) for i in range(4)]
+        proton_data = [np.concatenate((old_proton_data[i], new_proton_data[i]), axis=0) for i in range(4)]
+
+        gamma_labels = np.concatenate([old_gamma_labels, new_gamma_labels], axis=0)
+        proton_labels = np.concatenate([old_proton_labels, new_proton_labels], axis=0)
+    else:
+        # Load data as before
+        gamma_data, gamma_labels = load_telescope_data(file_paths[location]['gamma'], num_events * 0.7, label_value=1)
+        proton_data, proton_labels = load_telescope_data(file_paths[location]['proton'], num_events * 0.7, label_value=0)
+
+
+    # Other files on alex? what about v1?
+    # proton_noZBDT_noLocDist_hybrid_v2.h5
+    # gamma_diffuse_noZBDT_noLocDist_mono_v2.h5
+
+    print("Loaded data")
 
     # Concatenate data and labels
     tel_data = [np.concatenate((gamma_data[i], proton_data[i]), axis=0) for i in range(4)]
@@ -491,19 +519,27 @@ def data_splitter(mapped_images,mapped_labels,plot,formatted_datetime,loc):
 
     return single_train_data, single_train_labels, single_test_data, single_test_labels, train_data, train_labels, test_data, test_labels
 
-def create_strings(fnr,formatted_datetime,batch_size,dropout_rate,reg,num_epochs,fusiontype,transfer,base,normalize,filters_1):
+def create_strings(fnr,num_events,formatted_datetime,batch_size,dropout_rate,reg,num_epochs,fusiontype,transfer,base,normalize,filters_1,learning_rate,sb,eb):
     str_batch_size = '{}'.format(batch_size)
+    str_num_events = '{}'.format(num_events)
     str_rate = '{}'.format(dropout_rate)
     str_reg = '{}'.format(reg)
-    str_num_epochs = '{}'.format(num_epochs)
+    #str_num_epochs = '{}'.format(num_epochs)
     #str_thr = '{}'.format(sum_threshold)
     #str_cnz = '{}'.format(cut_nonzero)
     str_transfer = '{}'.format(transfer)
     str_base = '{}'.format(base)
     str_norm = '{}'.format(normalize)
     str_filter = '{}'.format(filters_1)
-    name_str = fnr + "_" + fusiontype + "_" + str_base  + "-base_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "dropoutrate" + str_reg + "reg_" + str_filter + "_filters_" + str_transfer + "transfer_" + str_norm + "_" + formatted_datetime 
-    name_single_str =  fnr + "_singleviewCNN_" + fusiontype + "_" + str_base  + "-base_" + str_num_epochs + "epochs" + str_batch_size + "batchsize" + str_rate + "dropoutrate" + str_reg + "reg_" + str_filter + "_filters_" + str_transfer + "transfer_" + str_norm + "_" + formatted_datetime 
+    str_learning = '{}'.format(learning_rate)
+    str_sb = '{}'.format(sb)
+    str_eb = '{}'.format(eb)
+    if base == "resnet":
+        str_name = fnr + "_" + str_sb + "to" + str_eb + "_"
+    else:
+        str_name = fnr + "_"
+    name_str = str_name + fusiontype + "_" + str_base  + "-base_" + str_num_events + "events_"  +  str_batch_size  + "bsize_" + str_rate + "drate_" + str_learning + "lrate_" + str_reg + "reg_" + str_filter + "fil_" + str_transfer + "transf_" + str_norm + "_" + formatted_datetime 
+    name_single_str =  str_name + "_singleCNN_" + fusiontype + "_" + str_base  + "-base_" + str_num_events + "events_"  +  str_batch_size + "bsize_" + str_rate + "drate_" + str_learning + "lrate_" + str_reg + "reg_" + str_filter + "fil_" + str_transfer + "transf_" + str_norm + "_" + formatted_datetime 
 
     return name_str, name_single_str
 
@@ -541,3 +577,369 @@ def save_model(model,name_str,loc):
         model_name_str = "../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ModelFiles/modelfile_" +  name_str + ".h5"
     else: model_name_str = "ModelFiles/modelfile_" +  name_str + ".h5"
     model.save(model_name_str)
+
+def plot_roc_curve(model, X_test, y_test,name_str,loc):
+    if loc == 'local':
+        save_filename = "../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ROC/roc_curve_" +  name_str 
+    else: save_filename = "ROC/roc_curve_" +  name_str 
+
+    """
+    Plot ROC curve for a Keras model.
+
+    Parameters:
+    - model: Keras model
+    - X_test: Test data
+    - y_test: True labels for the test data
+    """
+    # Predict probabilities on the test set
+    y_pred = model.predict(X_test)
+
+    # Compute ROC curve and ROC area for each class
+    fpr, tpr, _ = roc_curve(y_test, y_pred)
+    roc_auc = auc(fpr, tpr)
+
+
+    # Save each array separately to avoid dimension mismatch
+    np.save(save_filename + '_fpr.npy', fpr)
+    np.save(save_filename + '_tpr.npy', tpr)
+    np.save(save_filename + '_roc_auc.npy', roc_auc)
+    print(f"Data saved to {save_filename}")
+    
+    # Plot ROC curve
+    plt.figure(figsize=(8, 8))
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = {:.2f})'.format(roc_auc))
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend(loc='lower right')
+    #plt.show()
+
+    if loc == 'local':
+        filename_savefig = "../../../mnt/c/Users/hanne/Desktop/Studium Physik/ECAP_HiWi_CNN/ROC_Images/roc_curve_" +  name_str +".png"
+    else: filename_savefig = "ROC_Images/roc_curve_" +  name_str + ".png"
+
+    #filename_savefig = "ROC_Images/roc_curve_" + name_str + ".png"
+    plt.savefig(filename_savefig, bbox_inches='tight')
+
+    print("ROC Curve saved")
+
+
+
+def plot_roc_curve_from_history(history):
+    """
+    Plot ROC curve from Keras training history.
+
+    Parameters:
+    - history: Keras training history object
+    """
+    plt.figure(figsize=(8, 8))
+
+    # Extract true labels and predicted probabilities
+    y_true = history.history['val_labels']  # Replace 'val_labels' with the actual name in your history
+    y_pred_proba = history.history['val_predictions']  # Replace 'val_predictions' with the actual name in your history
+
+    # Compute ROC curve and ROC area
+    fpr, tpr, _ = roc_curve(y_true, y_pred_proba)
+    roc_auc = auc(fpr, tpr)
+
+    # Plot ROC curve
+    plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (area = {:.2f})'.format(roc_auc))
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend(loc='lower right')
+    plt.show()
+
+
+import numpy as np
+
+def calculate_mean_accuracy_in_intensity_bins(model, validation_data, validation_labels,min_intensity,max_intensity, nr_bins,output_file):
+
+
+    event_intensity = np.sum(validation_data, axis=(1, 2, 3, 4))
+
+    #min_intensity = np.min(event_intensity)
+    #max_intensity = np.max(event_intensity)
+    bin_width = (max_intensity - min_intensity) / nr_bins
+    print(f"Bin Width: {bin_width}")
+    # Print some sanity checks
+    print(f"Shape of batch_data: {validation_data.shape}")
+    print(f"First 10 event intensities: {event_intensity[:10]}")
+
+
+    mean_accuracies = []
+    bin_centers = []
+
+    with open(output_file, 'w') as file:
+        file.write("Bin,Mean_Accuracy,Mean_Intensity\n")
+
+        for i in range(nr_bins):
+            bin_start = min_intensity + i * bin_width
+            bin_end = min_intensity + (i + 1) * bin_width
+            # Calculate the mean intensity of the bin
+            bin_center = (bin_start + bin_end) / 2
+
+            # Indices of events within the current intensity bin
+            selected_indices = np.where(np.logical_and(event_intensity >= bin_start, event_intensity < bin_end))[0]
+
+
+
+            # Select data and labels for events within the current intensity bin
+            selected_data = validation_data[selected_indices]
+            selected_labels = validation_labels[selected_indices]
+
+            # Print additional checks
+            print(f"Mean Intensity: {bin_center}")
+            print(f"Number of events within intensity bin: {len(selected_indices)}")
+
+            if len(selected_indices) == 0:
+                print(f"No events in intensity bin: {bin_center}")
+                continue
+            #print(f"Shape of selected_data: {selected_data.shape}")
+            input_data = [selected_data[:, j, :, :, :] for j in range(4)]
+            #print(f"Shape of Input Data for Validation: {input_data.shape}")
+            # Evaluate the model on the selected data
+            results = model.evaluate(input_data, selected_labels, verbose=0)
+            print("Results:", results)
+
+            # Extract the accuracy from the results
+            accuracy = results[1]  # assuming accuracy is at index 1
+
+            
+
+            # Append results to lists
+            mean_accuracies.append(accuracy)
+            bin_centers.append(bin_center)
+
+            # Write results to the file
+            file.write(f"{i},{accuracy:.4f},{bin_center:.2f}\n")
+
+    
+    return mean_accuracies, bin_centers
+
+def calculate_mean_accuracy_in_intensity_bins_quantile(model, validation_data, validation_labels,nr_bins, output_file):
+    event_intensity = np.sum(validation_data, axis=(1, 2, 3, 4))
+
+    bin_edges = np.percentile(event_intensity, np.linspace(0, 100, nr_bins + 1))
+    
+    mean_accuracies = []
+    bin_centers = []
+
+    with open(output_file, 'w') as file:
+        file.write("Bin,Mean_Accuracy,Mean_Intensity\n")
+
+        for i in range(nr_bins):
+            bin_start = bin_edges[i]
+            bin_end = bin_edges[i + 1]
+            bin_center = (bin_start + bin_end) / 2
+
+            selected_indices = np.where(np.logical_and(event_intensity >= bin_start, event_intensity < bin_end))[0]
+
+            selected_data = validation_data[selected_indices]
+            selected_labels = validation_labels[selected_indices]
+
+            if len(selected_indices) == 0:
+                continue
+
+            input_data = [selected_data[:, j, :, :, :] for j in range(4)]
+            results = model.evaluate(input_data, selected_labels, verbose=0)
+            accuracy = results[1]
+
+            mean_accuracies.append(accuracy)
+            bin_centers.append(bin_center)
+
+            file.write(f"{i},{accuracy:.4f},{bin_center:.2f}\n")
+
+    return mean_accuracies, bin_centers
+
+def calculate_mean_accuracy_in_intensity_bins_log(model, validation_data, validation_labels, min_intensity, max_intensity, nr_bins, output_file):
+    event_intensity = np.sum(validation_data, axis=(1, 2, 3, 4))
+
+    bin_edges = np.logspace(np.log10(min_intensity), np.log10(max_intensity), nr_bins + 1)
+    
+    mean_accuracies = []
+    bin_centers = []
+
+    with open(output_file, 'w') as file:
+        file.write("Bin,Mean_Accuracy,Mean_Intensity\n")
+
+        for i in range(nr_bins):
+            bin_start = bin_edges[i]
+            bin_end = bin_edges[i + 1]
+            bin_center = (bin_start + bin_end) / 2
+
+            selected_indices = np.where(np.logical_and(event_intensity >= bin_start, event_intensity < bin_end))[0]
+
+            selected_data = validation_data[selected_indices]
+            selected_labels = validation_labels[selected_indices]
+
+            if len(selected_indices) == 0:
+                continue
+
+            input_data = [selected_data[:, j, :, :, :] for j in range(4)]
+            results = model.evaluate(input_data, selected_labels, verbose=0)
+            accuracy = results[1]
+
+            mean_accuracies.append(accuracy)
+            bin_centers.append(bin_center)
+
+            file.write(f"{i},{accuracy:.4f},{bin_center:.2f}\n")
+
+    return mean_accuracies, bin_centers
+
+def calculate_mean_accuracy_in_intensity_bins_log_single_view(model, validation_data, validation_labels, min_intensity, max_intensity, nr_bins, output_file):
+    event_intensity = np.sum(validation_data, axis=(1, 2, 3))
+
+    bin_edges = np.logspace(np.log10(min_intensity), np.log10(max_intensity), nr_bins + 1)
+
+    # Print some sanity checks
+    print(f"Shape of validation_data: {validation_data.shape}")
+    print(f"First 10 event intensities: {event_intensity[:10]}")
+
+    mean_accuracies = []
+    bin_centers = []
+
+    with open(output_file, 'w') as file:
+        file.write("Bin,Mean_Accuracy,Mean_Intensity\n")
+
+        for i in range(nr_bins):
+            bin_start = bin_edges[i]
+            bin_end = bin_edges[i + 1]
+            bin_center = (bin_start + bin_end) / 2
+
+            # Indices of events within the current intensity bin
+            selected_indices = np.where(np.logical_and(event_intensity >= bin_start, event_intensity < bin_end))[0]
+
+            # Select data and labels for events within the current intensity bin
+            selected_data = validation_data[selected_indices]
+            selected_labels = validation_labels[selected_indices]
+
+            # Print additional checks
+            print(f"Mean Intensity: {bin_center}")
+            print(f"Number of events within intensity bin: {len(selected_indices)}")
+
+            if len(selected_indices) == 0:
+                print(f"No events in intensity bin: {bin_center}")
+                continue
+
+            # Evaluate the model on the selected data
+            results = model.evaluate(selected_data, selected_labels, verbose=0)
+            print("Results:", results)
+
+            # Extract the accuracy from the results
+            accuracy = results[1]  # assuming accuracy is at index 1
+
+            # Append results to lists
+            mean_accuracies.append(accuracy)
+            bin_centers.append(bin_center)
+
+            # Write results to the file
+            file.write(f"{i},{accuracy:.4f},{bin_center:.2f}\n")
+
+    return mean_accuracies, bin_centers
+
+def calculate_mean_accuracy_in_intensity_bins_single_view(model, validation_data, validation_labels, min_intensity, max_intensity, nr_bins, output_file,type,single):
+    
+    
+    if single == True:
+        event_intensity = np.sum(validation_data, axis=(1, 2, 3))
+    else: 
+        event_intensity = np.sum(validation_data, axis=(1, 2, 3, 4))
+        
+    bin_width = (max_intensity - min_intensity) / nr_bins
+    print(f"Bin Width: {bin_width}")
+    # Print some sanity checks
+    print(f"Shape of validation_data: {validation_data.shape}")
+    print(f"First 10 event intensities: {event_intensity[:10]}")
+
+    mean_accuracies = []
+    bin_centers = []
+
+    with open(output_file, 'w') as file:
+        file.write("Bin,Mean_Accuracy,Mean_Intensity\n")
+
+        for i in range(nr_bins):
+            bin_start = min_intensity + i * bin_width
+            bin_end = min_intensity + (i + 1) * bin_width
+            # Calculate the mean intensity of the bin
+            bin_center = (bin_start + bin_end) / 2
+
+            # Indices of events within the current intensity bin
+            selected_indices = np.where(np.logical_and(event_intensity >= bin_start, event_intensity < bin_end))[0]
+
+            # Select data and labels for events within the current intensity bin
+            selected_data = validation_data[selected_indices]
+            selected_labels = validation_labels[selected_indices]
+
+            # Print additional checks
+            print(f"Mean Intensity: {bin_center}")
+            print(f"Number of events within intensity bin: {len(selected_indices)}")
+
+            if len(selected_indices) == 0:
+                print(f"No events in intensity bin: {bin_center}")
+                continue
+
+            # Evaluate the model on the selected data
+            results = model.evaluate(selected_data, selected_labels, verbose=0)
+            print("Results:", results)
+
+            # Extract the accuracy from the results
+            accuracy = results[1]  # assuming accuracy is at index 1
+
+            # Append results to lists
+            mean_accuracies.append(accuracy)
+            bin_centers.append(bin_center)
+
+            # Write results to the file
+            file.write(f"{i},{accuracy:.4f},{bin_center:.2f}\n")
+
+    return mean_accuracies, bin_centers
+
+def calculate_mean_accuracy_in_intensity_bins_quantile_single_view(model, validation_data, validation_labels,  nr_bins, output_file):
+    event_intensity = np.sum(validation_data, axis=(1, 2, 3))
+
+    bin_edges = np.percentile(event_intensity, np.linspace(0, 100, nr_bins + 1))
+    
+    mean_accuracies = []
+    bin_centers = []
+
+    with open(output_file, 'w') as file:
+        file.write("Bin,Mean_Accuracy,Mean_Intensity\n")
+
+        for i in range(nr_bins):
+            bin_start = bin_edges[i]
+            bin_end = bin_edges[i + 1]
+            bin_center = (bin_start + bin_end) / 2
+
+            # Indices of events within the current intensity bin
+            selected_indices = np.where(np.logical_and(event_intensity >= bin_start, event_intensity < bin_end))[0]
+
+            # Select data and labels for events within the current intensity bin
+            selected_data = validation_data[selected_indices]
+            selected_labels = validation_labels[selected_indices]
+
+            # Print additional checks
+            print(f"Mean Intensity: {bin_center}")
+            print(f"Number of events within intensity bin: {len(selected_indices)}")
+
+            if len(selected_indices) == 0:
+                print(f"No events in intensity bin: {bin_center}")
+                continue
+
+            # Evaluate the model on the selected data
+            results = model.evaluate(selected_data, selected_labels, verbose=0)
+            print("Results:", results)
+
+            # Extract the accuracy from the results
+            accuracy = results[1]  # assuming accuracy is at index 1
+
+            # Append results to lists
+            mean_accuracies.append(accuracy)
+            bin_centers.append(bin_center)
+
+            # Write results to the file
+            file.write(f"{i},{accuracy:.4f},{bin_center:.2f}\n")
+
+    return mean_accuracies, bin_centers
