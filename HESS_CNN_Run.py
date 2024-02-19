@@ -100,16 +100,7 @@ print("##################################################################")
 #def lr_time_based_decay(epoch, lr):
 #        return lr * 1 / (1 + decay * epoch)
 
-my_callbacks = [
-    
-    
-    keras.callbacks.EarlyStopping(monitor='val_loss',patience=patience,verbose=1,mode='auto')]
-
-    #keras.callbacks.LearningRateScheduler(lr_time_based_decay),
-    #keras.callbacks.LearningRateScheduler(lambda epoch, lr: scheduler(epoch, lr,learning_rate)),
-    #keras.callbacks.LearningRateScheduler(scheduler),
-    #keras.callbacks.LambdaCallback(on_epoch_end=lambda epoch, logs: print(f'val_loss: {logs["val_loss"]:.4f} - val_accuracy: {logs["val_accuracy"]:.4f}')),]
-    #keras.callbacks.ModelCheckpoint('best_model.h5', monitor='val_accuracy', save_best_only=True, mode='min', verbose=1),]
+my_callbacks = [keras.callbacks.EarlyStopping(monitor='val_loss',patience=patience,verbose=1,mode='auto')]
 
 my_loss = BinaryCrossentropy(from_logits=True)
 my_opt = keras.optimizers.Adam(learning_rate=learning_rate)
@@ -128,10 +119,8 @@ if single == 'yes':
     else: print("Unknown Base Model Specified! Must be 'moda' or 'resnet' .")
 
     single_view_model = create_single_model(base_cnn)
-    #compiled_single_view_model = compile_model(single_view_model)
 
     single_view_model.compile(optimizer=my_opt, loss='binary_crossentropy', metrics=['accuracy'])
-    #single_view_model.compile(keras.optimizers.SGD(), loss='mse')
     #single_view_model.summary()
 
     save_model(single_view_model,name_single_str,location)
@@ -168,14 +157,12 @@ history = model_multi.fit([train_data[:,i,:,:] for i in range(4)],train_labels,e
 print("... Finished the Fitting")
 
 plot_roc_curve(model_multi, [test_data[:,i,:,:] for i in range(4)], test_labels,name_str,location)
-#plot_roc_curve_from_history(history)
+
 
 # Save the history files for later usage in other scripts and plot results
 base_str_multi = base + "_multiview_" + fusiontype
 create_history_plot(history,name_str,base_str_multi)
 
-# Example usage:
-# Assuming you have a trained model 'model', a batch of data 'batch_data', and corresponding labels 'batch_labels'
 batch_data = test_data
 batch_labels = test_labels
 
@@ -189,25 +176,4 @@ mean_accuracy = calculate_mean_accuracy_in_intensity_bins_quantile(model_multi, 
 print(mean_accuracy)
 # print(f"Mean Validation Accuracy in Intensity Bin {intensity_bin}: {mean_accuracy}")
 
-#### TO DO:
-## Some mistake in the data preprocessing?? Compare to other Seq python files!!
-## Load the weights also for NN2, but keep it trainable!
-## Make some more Example Images! Overview with a lot of images on pdf pages!
-## Clean up the data loading process!
-## Clean up the other functions
-
-## Run with different complexity levels of CustomResNet
-## Try different filters
-
-# 19.01.2024
-## ROC Curves
-## Run all Fusiontypes! -> Implement Score Fusion
-# Make Earlymax work
-## With Transfer!! (first and second part of the CNN)
-## Performance per Intensity (pixel sum of Images for an event)
-
-# 27.01.2024
-# Make Latemax work
-# Scoresum <-> Scoreproduct?? Why partly works and sometimes not.
-# Plot Model architectures to compare -> netron.app
 

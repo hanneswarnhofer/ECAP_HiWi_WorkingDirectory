@@ -387,11 +387,6 @@ def dataloader(num_events, location,use_combined_data=False):
         gamma_data, gamma_labels = load_telescope_data(file_paths[location]['gamma'], num_events * 0.7, label_value=1)
         proton_data, proton_labels = load_telescope_data(file_paths[location]['proton'], num_events * 0.7, label_value=0)
 
-
-    # Other files on alex? what about v1?
-    # proton_noZBDT_noLocDist_hybrid_v2.h5
-    # gamma_diffuse_noZBDT_noLocDist_mono_v2.h5
-
     print("Loaded data")
 
     # Concatenate data and labels

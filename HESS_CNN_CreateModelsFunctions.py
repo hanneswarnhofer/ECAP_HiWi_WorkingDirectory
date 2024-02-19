@@ -126,47 +126,6 @@ def create_base_model_early2(input_shape,freeze=False):
 
     return model
 
-def create_base_model_early3(input_shape,freeze=False):
-    dropout_rate = 0.2
-    pool_size = 2
-    kernel_size = 4
-    reg = 0.00001
-    model = Sequential()
-
-    model.add(Conv2D(filters=25, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg), input_shape=input_shape,))
-    model.add(LeakyReLU(alpha=0.1))
-    model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
-
-    model.add(Dropout(dropout_rate))
-    model.add(Conv2D(filters=30, kernel_size=kernel_size, activation='relu', padding='same', kernel_regularizer=regularizers.l2(reg)))
-    model.add(LeakyReLU(alpha=0.1))
-    model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
-
-    model.add(Dropout(dropout_rate))
-    model.add(Conv2D(filters=50, kernel_size=kernel_size, activation='relu', padding='same', kernel_regularizer=regularizers.l2(reg)))
-    model.add(LeakyReLU(alpha=0.1))
-    model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
-
-    model.add(Dropout(dropout_rate))
-    model.add(Conv2D(filters=50, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg)))
-    model.add(LeakyReLU(alpha=0.1))
-    model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
-
-    model.add(Dropout(dropout_rate))
-    model.add(Conv2D(filters=100, kernel_size=kernel_size, activation='relu', padding='same', kernel_regularizer=regularizers.l2(reg)))
-    model.add(LeakyReLU(alpha=0.1))
-    model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
-
-    model.add(Dropout(dropout_rate))
-    model.add(Conv2D(filters=100, kernel_size=kernel_size, activation='relu', padding='same',kernel_regularizer=regularizers.l2(reg)))
-    model.add(MaxPooling2D(pool_size=pool_size, padding='same'))
-
-
-    if freeze:
-        for layer in model.layers:
-            layer.trainable = False
-
-    return model
 
 # Define the model for the combination of the previous CNNs and the final CNN for classification
 
@@ -231,21 +190,7 @@ def create_earlyconv_model(models,inputs,dropout_rate,kernel_size,pool_size,reg)
     #outputs = [model(inputs[i]) for i, model in enumerate(models)]
     fusionlayer = concatenate(models, axis=-1)
     fused_feature_map = Conv2D(filters=fusionlayer.shape[-1] // 4, kernel_size=(1, 1), activation='relu', padding='same', kernel_regularizer=regularizers.l2(reg))(fusionlayer)
-    
-    '''
-    fusionlayer = Reshape((fusionlayer.shape[1], fusionlayer.shape[2], fusionlayer.shape[3] // 4, 4))(fusionlayer)
-    fusionfilters = fusionlayer.shape[3]
 
-    conv2d_list = []
-    for i in range(4):  # Assuming you have 4 channels
-        slice_layer = Lambda(lambda x: x[:, :, :, i])(fusionlayer)
-        conv2d = Conv2D(filters=fusionfilters, kernel_size=(1, 1), padding='same', activation='relu')(slice_layer)
-        conv2d_list.append(conv2d)
-        #fusionlayer = conv2d_list
-    fused_feature_map = concatenate(conv2d_list, axis=-1)
-    '''
-    # fusionlayer = concatenate([model.output for model in models],axis=0)
-    # fusionlayer = Maximum(axis=0)(fusionlayer)
     Dropout4 = Dropout(dropout_rate)(fused_feature_map)
     Conv5 = Conv2D(filters=100, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg))(Dropout4)
     LeakyRelu5 = LeakyReLU(alpha=0.1)(Conv5) 
@@ -272,21 +217,6 @@ def create_earlyconv2_model(models,inputs,dropout_rate,kernel_size,pool_size,reg
     #outputs = [model(inputs[i]) for i, model in enumerate(models)]
     fusionlayer = concatenate(models, axis=-1)
     fused_feature_map = Conv2D(filters=fusionlayer.shape[-1] // 4, kernel_size=(1, 1), activation='relu', padding='same', kernel_regularizer=regularizers.l2(reg))(fusionlayer)
-    
-    '''
-    fusionlayer = Reshape((fusionlayer.shape[1], fusionlayer.shape[2], fusionlayer.shape[3] // 4, 4))(fusionlayer)
-    fusionfilters = fusionlayer.shape[3]
-
-    conv2d_list = []
-    for i in range(4):  # Assuming you have 4 channels
-        slice_layer = Lambda(lambda x: x[:, :, :, i])(fusionlayer)
-        conv2d = Conv2D(filters=fusionfilters, kernel_size=(1, 1), padding='same', activation='relu')(slice_layer)
-        conv2d_list.append(conv2d)
-        #fusionlayer = conv2d_list
-    fused_feature_map = concatenate(conv2d_list, axis=-1)
-    '''
-    # fusionlayer = concatenate([model.output for model in models],axis=0)
-    # fusionlayer = Maximum(axis=0)(fusionlayer)
 
     Dropout2 = Dropout(dropout_rate)(fused_feature_map)
     Conv3 = Conv2D(filters=50, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg))(Dropout2)
@@ -390,27 +320,6 @@ def create_earlymax2_model(models,inputs,dropout_rate,kernel_size,pool_size,reg)
     #print_layer_dimensions(model_multi)
     return model_multi
 
-def create_earlymax3_model(models,inputs,dropout_rate,kernel_size,pool_size,reg):
-
-    #outputs = [model(inputs[i]) for i, model in enumerate(models)]
-    fusionlayer = concatenate(models, axis=-1)
-    fusionlayer = Reshape((fusionlayer.shape[1], fusionlayer.shape[2], fusionlayer.shape[3] // 4, 4))(fusionlayer)
-
-    max_pooling_function = Lambda(lambda x: K.max(x, axis=-1, keepdims=False))
-    fused_feature_map = max_pooling_function(fusionlayer) 
-
-
-    Dropout6 = Dropout(dropout_rate)(fused_feature_map)
-    Conv7 = Conv2D(filters=200, kernel_size=kernel_size,padding='same', kernel_regularizer=regularizers.l2(reg))(Dropout6)
-    MaxPool7 = MaxPooling2D(pool_size=pool_size, padding='same')(Conv7)
-
-    Flat = Flatten()(MaxPool7)
-    Dense1 = Dense(units=1024, activation='relu')(Flat)
-    #x = Flatten(x)
-    outputs = Dense(units=1, activation='sigmoid')(Dense1)
-    model_multi = Model(inputs,outputs)
-    #print_layer_dimensions(model_multi)
-    return model_multi
 
 def create_earlyconcat_model(models,inputs,dropout_rate):
     #dropout_rate = 0.2 
@@ -593,8 +502,6 @@ def create_multi_model(base, transfer, fusiontype, input_shape, kernel_size, dro
         model_multi = create_earlymax_model([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4],dropout_rate,kernel_size,pool_size,reg)
     elif fusiontype == 'earlymax2':
         model_multi = create_earlymax2_model([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4],dropout_rate,kernel_size,pool_size,reg)
-    elif fusiontype == 'earlymax3':
-        model_multi = create_earlymax3_model([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4],dropout_rate,kernel_size,pool_size,reg)
     elif fusiontype == 'earlyconv':
         model_multi = create_earlyconv_model([cnn_model_1, cnn_model_2, cnn_model_3, cnn_model_4],[input_1, input_2, input_3, input_4],dropout_rate,kernel_size,pool_size,reg)
     elif fusiontype == 'earlyconv2':

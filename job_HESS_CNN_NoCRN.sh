@@ -19,9 +19,10 @@ micromamba activate dl1dh
 srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -c 4 -ft 'earlymax2' -base 'moda' -plt 'no' -single 'no'
 srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -c 4  -ft 'earlyconv2' -base 'moda' -plt 'no' -single 'no'
 srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -c 4  -ft 'earlyconcat2' -base 'moda' -plt 'no' -single 'no'
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250  -ft 'earlymax' -base 'moda' -plt 'no' 
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250  -ft 'earlyconcat' -base 'moda' -plt 'no' 
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250  -ft 'earlyconcat' -base 'moda' -plt 'no' 
+
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250  -ft 'earlymax' -base 'moda' -plt 'no' 
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250  -ft 'earlyconcat' -base 'moda' -plt 'no' 
+srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250  -ft 'earlyconcat' -base 'moda' -plt 'no' 
 
 srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -c 4  -ft 'scoresum' -base 'moda' -plt 'no' -single 'no'
 srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -c 4  -ft 'scoreproduct' -base 'moda' -plt 'no' -single 'no'
@@ -29,29 +30,3 @@ srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -
 
 srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -c 4  -ft 'latefc' -base 'moda' -plt 'no' -single 'no'
 srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -c 4  -ft 'latemax' -base 'moda' -plt 'no' -single 'no'
-
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/automate.py 2024-01-30_run3
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -ft 'latemax' -base 'moda' -plt 'no' -lr 0.1
-
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -ft 'latefc' -base 'moda' -plt 'no'
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -e 250 -ft 'latemax' -base 'moda' -plt 'no'
-
-
-
-
-
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latefc' 
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latemax'
-
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latefc' 
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latemax' 
-
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latefc' -base 'moda' -fil 32
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latemax' -base 'moda' -fil 32
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latefc'  -base 'moda' -fil 32
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latemax'  -base 'moda' -fil 32
-
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latefc' -base 'moda' -fil 128
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latemax' -base 'moda' -fil 128
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latefc'  -base 'moda' -fil 128
-#srun python /home/hpc/b129dc/b129dc26/ECAP_HiWi_Project/HESS_CNN_Run.py -ft 'latemax'  -base 'moda' -fil 128
